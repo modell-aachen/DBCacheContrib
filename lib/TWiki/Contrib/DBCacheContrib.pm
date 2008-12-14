@@ -51,7 +51,7 @@ use vars qw( $initialised $storable $VERSION $RELEASE );
 
 $initialised = 0; # Not initialised until the first new
 
-$VERSION = '$Rev: 16742 $';
+$VERSION = '$Rev$';
 $RELEASE = 'TWiki-4';
 
 =pod
