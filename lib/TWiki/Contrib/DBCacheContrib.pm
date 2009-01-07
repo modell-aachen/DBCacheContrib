@@ -52,7 +52,7 @@ use vars qw( $initialised $storable $VERSION $RELEASE );
 $initialised = 0; # Not initialised until the first new
 
 $VERSION = '$Rev$';
-$RELEASE = 'TWiki-4';
+$RELEASE = 'Foswiki-1';
 
 =pod
 
@@ -403,5 +403,23 @@ sub _updateCache {
 
     return ( $readFromCache, $readFromFile, $removed );
 }
+
+sub DESTROY {
+    my $this = shift;
+
+    # prevent recursive destruction
+    return if $this->{_destroying};
+    $this->{_destroying} = 1;
+
+    #print STDERR "Destroy ",ref($this),", $this\n";
+
+    # destroy sub objects
+    map {
+      $_->DESTROY() if $_ && $_ ne $this && ref($_);
+    } values %{$this->{keys}};
+
+    $this->{keys} = undef;
+}
+
 
 1;

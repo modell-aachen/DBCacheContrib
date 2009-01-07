@@ -43,7 +43,7 @@ Check the file time against what is seen on disc. Return 1 if consistent, 0 if i
 sub uptodate {
     my $this = shift;
     my $file = $this->{file};
-    if ( -r $file && defined( $this->{time} )) {
+    if ( -f $file && defined( $this->{time} )) {
         my @sinfo = stat( $file );
         my $fileTime = $sinfo[9];
         if ( defined( $fileTime) && $fileTime == $this->{time} ) {
@@ -92,6 +92,20 @@ sub read {
 
     $this->{file} = $archive->readString();
     $this->{time} = $archive->readInt();
+}
+
+=begin text 
+
+---++ =DESTROY()=
+destructor
+
+=cut
+
+sub DESTROY {
+    my $this = shift;
+
+    undef $this->{file};
+    undef $this->{time};
 }
 
 1;

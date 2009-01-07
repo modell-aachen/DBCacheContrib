@@ -62,9 +62,9 @@ sub new {
 # PUBLIC dispose of this map, breaking any circular references
 sub DESTROY {
     my $this = shift;
-    #print STDERR "Destroy ",ref($this),"\n";
+
+    #print STDERR "Destroy ",ref($this),", $this\n";
     $this->{keys} = undef;
-    # should be enough; nothing else should be pointing to the keys
 }
 
 =begin text
@@ -174,6 +174,8 @@ Remove an entry at an index from the array. Return the old value.
 
 sub remove {
     my ( $this, $attr ) = @_;
+
+    $attr ||= '';
 
     if ( $attr =~ m/^(\w+)\.(.*)$/o && ref( $this->{keys}{$attr} )) {
         $attr = $1;
