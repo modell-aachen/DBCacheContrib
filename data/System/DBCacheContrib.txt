@@ -1,6 +1,7 @@
 ---+!! %TOPIC%
 
-Reusable code that treats TWiki forms as if they were table rows in a database.
+Reusable code that caches Foswiki topics, and provides fast
+searches of the content.
 
 <!--
 
@@ -16,29 +17,31 @@ Reusable code that treats TWiki forms as if they were table rows in a database.
 
 ---++ Summary of Contents
 
-This module supports structured queries over a database built on the fly from
-the forms in TWiki topics. It does not support any tags, as it is provided as a
-service for other plugins that want to treat a TWiki web as a simple database;
-for example, the Foswiki:Extensions/FormQueryPlugin, which supports the display of
-query results.
+This module supports fast structured queries over topics in a web. It uses
+a high performance cache of the topic data to deliver much better search
+performance.
 
-The plugin encapsulates code that was formerly in the "engine room" of the
-<nop>FormQueryPlugin. It has been abstracted out in the belief that it will be
-useful to anyone who wants to do simple search operations from a plugin.
+Historically this module was designed to be used with a
+companion plugin, such as Foswiki:Extensions.FormQueryPlugin or
+Foswiki:Extensions.DBCachePlugin, which support queries and the display of
+query results. When used this way, the %TOPIC% supports queries made using
+a simple [[%TOPIC%#QueryLanguage][query language]].
+
+The %TOPIC% can also be used to accelerate standard queries made using the
+=[[QuerySearch][type="query"]= feature of %SEARCH.
 
 ---+++ Features
-	* Perform complex queries on the TWiki database
-	* Cache TWiki topics for rapid queries
+   * Perform efficient structured queries on data in forms
 
----+++ How the database gets built
+---+++ Using the built-in query language
 You can think of the database as an array of all the topics in a web. Each
 array entry is a map (or hash in perl terms) that maps a set of field names to
 values.
 
 Each topic in the web automatically gets a number of standard fields, generated
-by reading the metadata from the topic (see %SYSTEMWEB%.TWikiMetaData)
+by reading the metadata from the topic (see %TWIKIWEB%.TWikiMetaData)
 	* =name=        - name of the topic
-	* =parent=      - name of parent topic
+	* =parent=      - *name* of parent topic
 	* =_up=         - _reference_ to the Map of the parent topic, if it exists
 	* =attachments= - array of Maps, each of which contains:
 		*  =_up= - _reference_ to the Map for the topic
@@ -69,71 +72,67 @@ by reading the metadata from the topic (see %SYSTEMWEB%.TWikiMetaData)
           the topic.
 	* =text= - raw text of the topic)
 
-The sub-Maps created for =info=, _form name_, =moved=, and each row in
+The sub-maps created for =info=, _form name_, =moved=, and each row in
 =attachments= also have a _reference_ back to the topic Map, called  =_up=.
 
 Other fields may be added by subclasses. Refer to the documentation for the
 plugin that is using the DBCache for more details.
 
+---++++ Query operators
+%STARTSECTION{"searchoperators"}%
+Fields are given by name, and values by strings or numbers. Strings should always be surrounded by 'single-quotes'. Strings which are regular expressions (RHS of =, != =~ operators) use 'perl' regular expression syntax (google for =perlre= for help). Numbers can be signed integers or decimals. Single quotes in values may be escaped using backslash (\).
+
+The following operators are available:
+| *Operator* | *Result* | *Meaning* |
+| <code>=</code> | Boolean | LHS exactly matches the regular expression on the RHS. The expression must match the whole string. |
+| <code>!=</code> | Boolean | Inverse of = |
+| <code>=~</code> | Boolean | LHS contains RHS i.e. the RHS is found somewhere in the field value. |
+| <code>&lt;</code> | Boolean | Numeric < |
+| <code>&gt;</code> | Boolean | Numeric > |
+| <code>&gt;=</code> | Boolean | Numeric >= |
+| <code>&lt;=</code> | Boolean | Numeric <= |
+| =lc= | String | Unary lower case |
+| =uc= | String | Unary UPPER CASE |
+| =IS_DATE= | Compare two dates e.g. '1 Apr 2003' IS_DATE '1 Apr 2004' |
+| =EARLIER_THAN= | BOOLEAN | Date is earlier than the given date |
+| =EARLIER_THAN_OR_ON= | BOOLEAN | Date is earlier than, or on, the given date |
+| =LATER_THAN= | Boolean | LHS is later than the given date |
+| =LATER_THAN_OR_ON= | Boolean | LHS is later than the given date |
+| =WITHIN_DAYS= | Boolean | Date (which must be in the future) is within n _working_ days of todays date |
+| <code>!</code> | Boolean | Unary NOT |
+| =AND= | Boolean | AND |
+| =OR= | Boolean | OR |
+| <code>()</code> | any | Bracketed subexpression |
+
+Dates for the date operators (=IS_DATE=, =EARLIER_THAN= etc) must be dates in the format expected by =Time::ParseDate= (like the ActionTrackerPlugin). =WITHIN_DAYS= works out the number of _working_ days assuming a 5 day week (i.e. excluding Saturday and Sunday). Apologies in advance if your weekend is offset &plusmn; a day! Integers will automatically be converted to dates, by assuming they represent a number of seconds since midnight GMT on 1st January 1970. You can also use the =d2n= operator to convert a date string to such an integer.
+
+%ENDSECTION{"searchoperators"}%
+
 ---+++ The cache
-To achieve best perfomance the plugin caches the database read from the TWiki
-topics. The cache is stored in the work area for the DBCacheContrib (see
-={RCS}{WorkAreaDir}= in =configure=). If any topic changes in the web, this
-cache is automatically rebuilt. The cache file can be deleted at any point with
-no ill effects.
-
----+++ Extending or customising
-Extension or customisation is welcome, as long as all extensions are described
-and code provided back to the author.
-
-The module is shipped with a perl build file, which should be used for
-installation and testing. Testing is done using CPAN:Test::Unit, and is invoked
-using the 'test' build target. Writing tests is a useful way of feeding back
-bugs as well. I can't encourage you enough to maintain and extend the tests!
+To achieve best perfomance the plugin caches the data read from topics in a
+database. The database is stored in the work area for the DBCacheContrib (see
+={WorkAreaDir}= in =configure=). If any topic changes in the web, this
+cache is automatically rebuilt (subject to configuration options). The cache
+can be deleted at any point with no ill effects.
 
 ---++ Detailed Documentation
 Clients use the DBCache by defining a subclass of the
-=TWiki::Contrib::DBCacheContrib= class. The following POD documentation
-describes the methods of this class and the various other classes provided by
-the plugin..
-
-%$POD%
+=Foswiki::Contrib::DBCacheContrib= class. Implementors are stongly recommended to read the POD documentation in the code.
 
 <!--
-	* Set STUB = %$STUB%
-	* Set SHORTDESCRIPTION = Reusable code that treats TWiki forms as if they were table rows in a database
+	* Set SHORTDESCRIPTION = Reusable code that treats forms as if they were table rows in a database
 -->
 
 ---++ Installation Instructions
-<strong>
-WARNING: TWiki-4 only. If you want to use this extension with an earlier
-version of TWiki, please see
-[[http://twiki.org/cgi-bin/view/Plugins/%TOPIC%?rev=1.9][an earlier version of this topic]]
-</strong>
-
-<div class="twikiAlert">
-Note: if you are upgrading from a pre-13527 version, you __must__ run
-=configure= after you have installed. Specifically, the
-={DBCacheContrib}{Archivist}= configuration option must have a value, or you
-will get a "No {DBCacheContrib}{Archivist}" error.
-</div>
-
----+++ {DBCache}{AlwaysUpdateCache}
-If =$TWiki::cfg{DBCache}{AlwaysUpdateCache}=  is set to FALSE (defaults to TRUE
-for compatibility) then <nop>DBCacheContrib will avoid calling =_updateCache= unless
-requested. =_updateCache= accesses every topic file in the
-web, so its an unnecessary performance hit.  <nop>DBCacePlugin now only requests
-=_updateCache= from the afterSaveHandler and from the new REST updateCache
-handler.
-
-%$INSTALL_INSTRUCTIONS%
+%$INSTALLATION_INSTRUCTIONS%
 
 ---++ Contrib Info
-|  Author: | TWiki:Main/CrawfordCurrie |
+|  Author: | Foswiki:Main/CrawfordCurrie kttp://c-dot.co.uk |
 |  Copyright &copy;: | This code is based on an original development of Motorola Inc. and is protected by the following copyrights: <br>Copyright @copy 2002-2003 Motorola Inc. All Rights Reserved. <br>Portions copyright &copy; 2004. Crawford Currie http://www.c-dot.co.uk |
-|  License: | As required for the publication of all extensions to TWiki, this software is published under the terms of the GNU General Public License. This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details, published at http://www.gnu.org/copyleft/gpl.html |
+|  License: | GPL |
 |  Version: | %$VERSION% |
 |  Change History: | |
+|  28 Jan 2009 | Foswiki version; added Michael Daum's EARLIER_THAN_OR_ON and LATER_THAN_OR_ON ops. Fixed a number of bugs. |
 |  12346 | fixing uptodate() for Andrew File Systems; fixed memory leak on persistent perl |   
 |  16347 | remove META data from text hash; include META data in all hash. TWiki:Main.MichaelDaum |
 |  16346 | caching all topic elements to an =all= field to allow th search in all of the text and the formfields like \
