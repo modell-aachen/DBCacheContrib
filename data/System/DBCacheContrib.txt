@@ -132,7 +132,7 @@ Clients use the DBCache by defining a subclass of the
 |  License: | GPL |
 |  Version: | %$VERSION% |
 |  Change History: | |
-|  28 Jan 2009 | Foswiki version; added Michael Daum's EARLIER_THAN_OR_ON and LATER_THAN_OR_ON ops. Fixed a number of bugs. |
+|  28 Jan 2009 | Foswikitask:Item453: Foswiki version; added Berkeley DB support, dropped plain-file support. Added Michael Daum's EARLIER_THAN_OR_ON and LATER_THAN_OR_ON ops. Fixed a number of bugs. |
 |  12346 | fixing uptodate() for Andrew File Systems; fixed memory leak on persistent perl |   
 |  16347 | remove META data from text hash; include META data in all hash. TWiki:Main.MichaelDaum |
 |  16346 | caching all topic elements to an =all= field to allow th search in all of the text and the formfields like \
