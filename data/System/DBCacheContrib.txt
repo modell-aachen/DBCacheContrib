@@ -19,7 +19,8 @@ searches of the content.
 
 This module supports fast structured queries over topics in a web. It uses
 a high performance cache of the topic data to deliver much better search
-performance.
+performance. Different back-end techologies can be used to implement the
+cache, to allow simple tradeoffs between scaling and raw performance.
 
 Historically this module was designed to be used with a
 companion plugin, such as Foswiki:Extensions.FormQueryPlugin or
@@ -27,16 +28,15 @@ Foswiki:Extensions.DBCachePlugin, which support queries and the display of
 query results. When used this way, the %TOPIC% supports queries made using
 a simple [[%TOPIC%#QueryLanguage][query language]].
 
-The %TOPIC% can also be used to accelerate standard queries made using the
-=[[QuerySearch][type="query"]= feature of %SEARCH.
-
 ---+++ Features
    * Perform efficient structured queries on data in forms
 
 ---+++ Using the built-in query language
-You can think of the database as an array of all the topics in a web. Each
-array entry is a map (or hash in perl terms) that maps a set of field names to
-values.
+The query language supported by DBCacheContrib is very similar to the query language used with %SEARCH, which was derived from it. However the underlying schema is somewhat different.
+
+You can think of the database as an map of all the topics in a web. Each
+entry is itself a map (or hash, in perl terms) that maps a set of field
+names to values.
 
 Each topic in the web automatically gets a number of standard fields, generated
 by reading the metadata from the topic (see %TWIKIWEB%.TWikiMetaData)
@@ -44,8 +44,8 @@ by reading the metadata from the topic (see %TWIKIWEB%.TWikiMetaData)
 	* =parent=      - *name* of parent topic
 	* =_up=         - _reference_ to the Map of the parent topic, if it exists
 	* =attachments= - array of Maps, each of which contains:
-		*  =_up= - _reference_ to the Map for the topic
-		*  =name= - attachment name
+		* =_up= - _reference_ to the Map for the topic
+		* =name= - attachment name
 		* =attr= - e.g hidden
 		* =comment= - attachment comment
 		* =path= - client path used to upload attachment
@@ -127,7 +127,7 @@ Clients use the DBCache by defining a subclass of the
 %$INSTALL_INSTRUCTIONS%
 
 ---++ Contrib Info
-|  Author: | Foswiki:Main/CrawfordCurrie kttp://c-dot.co.uk |
+|  Author: | Foswiki:Main/CrawfordCurrie http://c-dot.co.uk |
 |  Copyright &copy;: | This code is based on an original development of Motorola Inc. and is protected by the following copyrights: <br>Copyright @copy 2002-2003 Motorola Inc. All Rights Reserved. <br>Portions copyright &copy; 2004. Crawford Currie http://www.c-dot.co.uk |
 |  License: | GPL |
 |  Version: | %$VERSION% |
