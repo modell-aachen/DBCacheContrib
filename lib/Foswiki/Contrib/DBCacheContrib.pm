@@ -127,7 +127,7 @@ sub _loadTopic {
             my( $web, $topic ) = Foswiki::Func::normalizeWebTopicName('', $1);
             $form->set('name', $web.'.'.$topic);
             $form->set('_up', $meta);
-            $form->set('_web', $this);
+            $form->set('_web', $this->{_cache});
             $meta->set('form', $topic);
             $meta->set($topic, $form);
             $tailMeta = 1;
@@ -137,24 +137,24 @@ sub _loadTopic {
         } elsif ( $line =~ m/^%META:TOPICINFO{(.*)}%/o ) {
             my $att = $this->{archivist}->newMap(initial => $1);
             $att->set( '_up', $meta);
-            $att->set( '_web', $this);
+            $att->set( '_web', $this->{_cache});
             $meta->set( 'info', $att );
         } elsif ( $line =~ m/^%META:TOPICMOVED{(.*)}%/o ) {
             my $att = $this->{archivist}->newMap(initial => $1);
             $att->set( '_up', $meta);
-            $att->set( '_web', $this);
+            $att->set( '_web', $this->{_cache});
             $meta->set( 'moved', $att );
             $tailMeta = 1;
         } elsif ( $line =~ m/^%META:FIELD{(.*)}%/o ) {
             my $fs = new Foswiki::Attrs($1);
             $form = $this->{archivist}->newMap() unless $form;
-            $form->set( '_web', $this, 1 );
+            $form->set( '_web', $this->{_cache} );
             $form->set( $fs->get('name'), $fs->get('value'));
             $tailMeta = 1;
         } elsif ( $line =~ m/^%META:FILEATTACHMENT{(.*)}%/o ) {
             my $att = $this->{archivist}->newMap(initial => $1);
             $att->set( '_up', $meta);
-            $att->set( '_web', $this);
+            $att->set( '_web', $this->{_cache});
             my $atts = $meta->get( 'attachments' );
             if ( !defined( $atts )) {
                 $atts = $this->{archivist}->newArray();
@@ -165,7 +165,7 @@ sub _loadTopic {
         } elsif ( $line =~ m/^%META:PREFERENCE{(.*)}%/o ) {
             my $pref = $this->{archivist}->newMap(initial => $1);
             $pref->set( '_up', $meta);
-            $pref->set( '_web', $this);
+            $pref->set( '_web', $this->{_cache});
             my $prefs = $meta->get('preferences');
             if (!defined($prefs)) {
                 $prefs = $this->{archivist}->newArray();
@@ -240,7 +240,7 @@ sub _onReload {
         }
 
         # set pointer to web
-        $topic->set( '_web', $this, 1 );
+        $topic->set( '_web', $this->{_cache}, 1 );
         $topic->set( 'web', $this->{_web} );
     }
 
@@ -268,7 +268,7 @@ sub load {
     my $updateCache = shift
       || $Foswiki::cfg{DBCacheContrib}{AlwaysUpdateCache};
     $updateCache = 1 unless (defined($updateCache));
-    #print STDERR "called load($updateCache)\n";
+    #print STDERR "Called load($updateCache)\n";
 
     return (0, 0, 0) if ( $this->{_cache} ); # already loaded?
 
@@ -276,6 +276,7 @@ sub load {
     $web =~ s/\//\./g;
 
     $this->{_cache} = $this->{archivist}->getRoot();
+    ASSERT($this->{_cache}) if DEBUG;
 
     # Check what's there already
     my $readFromCache = $this->{_cache}->size();
