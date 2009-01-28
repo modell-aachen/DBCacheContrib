@@ -124,7 +124,7 @@ Clients use the DBCache by defining a subclass of the
 -->
 
 ---++ Installation Instructions
-%$INSTALLATION_INSTRUCTIONS%
+%$INSTALL_INSTRUCTIONS%
 
 ---++ Contrib Info
 |  Author: | Foswiki:Main/CrawfordCurrie kttp://c-dot.co.uk |
