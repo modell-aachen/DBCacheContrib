@@ -13,7 +13,7 @@ use Foswiki::Contrib::DBCacheContrib::MemMap;
 use Foswiki::Contrib::DBCacheContrib::MemArray;
 
 sub new {
-    my ($class, $file) = @_;
+    my ( $class, $file ) = @_;
     my $this = bless( { _file => $file }, $class );
     return $this;
 }
@@ -21,15 +21,14 @@ sub new {
 # Factory for new Map objects
 sub newMap {
     my $this = shift;
-    return new Foswiki::Contrib::DBCacheContrib::MemMap(
-        archivist => $this, @_);
+    return new Foswiki::Contrib::DBCacheContrib::MemMap( archivist => $this,
+        @_ );
 }
 
 # Factory for new Array objects
 sub newArray {
     my ($this) = @_;
-    return new Foswiki::Contrib::DBCacheContrib::MemArray(
-        archivist => $this);
+    return new Foswiki::Contrib::DBCacheContrib::MemArray( archivist => $this );
 }
 
 # Subclasses must provide getRoot and clear.

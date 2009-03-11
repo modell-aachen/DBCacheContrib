@@ -17,7 +17,7 @@ sub set_up {
 sub tear_down {
     my $this = shift;
 
-    Devel::Cycle::find_cycle($this->{ar}) if $this->{ar};
+    Devel::Cycle::find_cycle( $this->{ar} ) if $this->{ar};
 
     # Clear out any existing data from the archive
     $this->{ar}->clear() if $this->{ar};
@@ -26,10 +26,10 @@ sub tear_down {
 }
 
 sub setArchivist {
-    my ($this, $archivist) = @_;
+    my ( $this, $archivist ) = @_;
     $this->{archivist} = $archivist;
-    my $tmpfile = new File::Temp(UNLINK => 1);
-    $this->{ar} = $archivist->new($tmpfile->filename);
+    my $tmpfile = new File::Temp( UNLINK => 1 );
+    $this->{ar}     = $archivist->new( $tmpfile->filename );
     $this->{tempfn} = $tmpfile->filename;
 }
 
@@ -42,6 +42,7 @@ sub StorableArchivist {
 our $bdb;
 
 {
+
     package DBCacheContribTestCase::FakeArchivist;
 
     sub new {
@@ -52,22 +53,19 @@ our $bdb;
 
 sub BDBArchivist {
     my $this = shift;
-    if (!$bdb) {
-        $this->setArchivist(
-            'Foswiki::Contrib::DBCacheContrib::Archivist::BDB');
+    if ( !$bdb ) {
+        $this->setArchivist('Foswiki::Contrib::DBCacheContrib::Archivist::BDB');
         $bdb = $this->{ar};
-    } else {
-        $this->{ar} = $bdb;
+    }
+    else {
+        $this->{ar}   = $bdb;
         $bdb->{stubs} = {};
     }
     $this->{archivist} = 'DBCacheContribTestCase::FakeArchivist';
 }
 
 sub fixture_groups {
-    return ([
-        'StorableArchivist',
-        'BDBArchivist'
-       ]);
-};
+    return ( [ 'StorableArchivist', 'BDBArchivist' ] );
+}
 
 1;

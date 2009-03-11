@@ -10,9 +10,10 @@
 #
 package Foswiki::Contrib::DBCacheContrib::Array;
 use base 'Tie::Array';
+
 # Mixin archivability
 use Foswiki::Contrib::DBCacheContrib::Archivable;
-push(@ISA, 'Foswiki::Contrib::DBCacheContrib::Archivable');
+push( @ISA, 'Foswiki::Contrib::DBCacheContrib::Archivable' );
 
 use strict;
 use Assert;
@@ -61,9 +62,9 @@ use Foswiki::Contrib::DBCacheContrib::Search;
 
 sub TIEARRAY {
     my $class = shift;
-    my %args = @_;
-    if ($args{existing}) {
-        ASSERT(UNIVERSAL::isa($args{existing}, __PACKAGE__)) if DEBUG;
+    my %args  = @_;
+    if ( $args{existing} ) {
+        ASSERT( UNIVERSAL::isa( $args{existing}, __PACKAGE__ ) ) if DEBUG;
         return $args{existing};
     }
     return $class->new(@_);
@@ -71,13 +72,14 @@ sub TIEARRAY {
 
 sub new {
     my $class = shift;
-    my %args = @_;
-    my $this = bless({}, $class);
-    if ($args{existing}) {
-        ASSERT(UNIVERSAL::isa($args{existing}, __PACKAGE__)) if DEBUG;
-        $this->setArchivist($args{existing}->getArchivist());
-    } elsif ($args{archivist}) {
-        $this->setArchivist($args{archivist});
+    my %args  = @_;
+    my $this  = bless( {}, $class );
+    if ( $args{existing} ) {
+        ASSERT( UNIVERSAL::isa( $args{existing}, __PACKAGE__ ) ) if DEBUG;
+        $this->setArchivist( $args{existing}->getArchivist() );
+    }
+    elsif ( $args{archivist} ) {
+        $this->setArchivist( $args{archivist} );
     }
     return $this;
 }
@@ -89,7 +91,7 @@ sub fastget {
 }
 
 sub equals {
-    my ($this, $that) = @_;
+    my ( $this, $that ) = @_;
     return $this == $that;
 }
 
@@ -104,7 +106,7 @@ Uses =equals= to find the given element in the array and return its index
 sub find {
     my ( $this, $obj ) = @_;
     my $n = $this->FETCHSIZE();
-    for (my $i = 0; $i < $n; $i++) {
+    for ( my $i = 0 ; $i < $n ; $i++ ) {
         my $nobj = $this->FETCH($i);
         return $i if ( $obj->equals($nobj) );
     }
@@ -134,7 +136,7 @@ Remove an entry at an index from the array.
 
 sub remove {
     my ( $this, $i ) = @_;
-    $this->SPLICE($i, 1);
+    $this->SPLICE( $i, 1 );
 }
 
 =begin text
@@ -162,63 +164,84 @@ See also =Foswiki::Contrib::DBCacheContrib::Map= for syntax that applies to maps
 
 sub get {
     my ( $this, $key, $root ) = @_;
+
     # Field
     my $res;
     if ( $key =~ m/^(\d+)(.*)/o ) {
+
         #print STDERR "Index shortcut $1\n";
         return undef unless ( $this->FETCHSIZE() > $1 );
         my $field = $this->FETCH($1);
-        if ( $2  && ref( $field )) {
+        if ( $2 && ref($field) ) {
+
             #print STDERR "\t...$2\n";
             $res = $field->get( $2, $root );
-        } else {
+        }
+        else {
             $res = $field;
         }
-    } elsif ( $key =~ m/^\.(.*)$/o ) {
+    }
+    elsif ( $key =~ m/^\.(.*)$/o ) {
+
         #print STDERR ".$1\n";
         $res = $this->get( $1, $root );
-	} elsif ( $key =~ /^(\w+)$/o ) {
+    }
+    elsif ( $key =~ /^(\w+)$/o ) {
+
         #print STDERR "sum $1\n";
-        $res = $this->sum( $key );
-	} elsif ( $key =~ m/^\[\*(.+)$/o ) {
-        my ( $one, $two ) = mbrf( "[", "]", $1);
+        $res = $this->sum($key);
+    }
+    elsif ( $key =~ m/^\[\*(.+)$/o ) {
+        my ( $one, $two ) = mbrf( "[", "]", $1 );
+
         #print STDERR "All $one\n";
         require Foswiki::Contrib::DBCacheContrib::MemArray;
         $res = new Foswiki::Contrib::DBCacheContrib::MemArray();
         my $n = $this->FETCHSIZE();
-        for (my $i = 0; $i < $n; $i++) {
+        for ( my $i = 0 ; $i < $n ; $i++ ) {
             my $meta = $this->FETCH($i);
-            if ( ref( $meta )) {
+            if ( ref($meta) ) {
                 my $fieldval = $meta->get( $one, $root );
-                if ( defined( $fieldval ) ) {
-                    $res->add( $fieldval );
+                if ( defined($fieldval) ) {
+                    $res->add($fieldval);
                 }
             }
         }
-	} elsif ( $key =~ m/^\[(\w+)\](.*)$/o ) {
+    }
+    elsif ( $key =~ m/^\[(\w+)\](.*)$/o ) {
+
         #print STDERR "[$1]\n";
         my $field = $this->get( $1, $root );
-        if ( $2 && ref( $field )) {
+        if ( $2 && ref($field) ) {
+
             #print STDERR "\t...$2\n";
-            $res = $field->get( $2, $root ) ;
-        } else {
+            $res = $field->get( $2, $root );
+        }
+        else {
             $res = $field;
         }
-	} elsif ( $key =~ m/^\[\??(.+)$/o ) {
-        my ( $one, $two ) = mbrf( "[", "]", $1);
+    }
+    elsif ( $key =~ m/^\[\??(.+)$/o ) {
+        my ( $one, $two ) = mbrf( "[", "]", $1 );
+
         #print STDERR "Search $one\n";
-        $res = $this->search(
-            new Foswiki::Contrib::DBCacheContrib::Search( $one ) );
-        if ( $two && ref( $res )) {
+        $res =
+          $this->search( new Foswiki::Contrib::DBCacheContrib::Search($one) );
+        if ( $two && ref($res) ) {
+
             #print STDERR "\t...$two\n";
-            $res = return $res->get( $two );
+            $res = return $res->get($two);
         }
-    } elsif ( $key =~ m/^#(.*)$/o ) {
+    }
+    elsif ( $key =~ m/^#(.*)$/o ) {
+
         #print STDERR "#$1\n";
         $res = $root->get( $1, $root );
-    } else {
+    }
+    else {
         die "ERROR: bad Array expression at $key";
-	}
+    }
+
     #print STDERR "\t-> $res\n";
     return $res;
 }
@@ -255,16 +278,17 @@ sub sum {
     }
 
     my $n = $this->FETCHSIZE();
-    for (my $i = 0; $i < $n; $i++) {
+    for ( my $i = 0 ; $i < $n ; $i++ ) {
         my $meta = $this->FETCH($i);
-        if ( ref( $meta )) {
+        if ( ref($meta) ) {
             my $fieldval = $meta->get( $field, undef );
-            if ( defined( $fieldval ) ) {
-                if ( defined( $subfields )) {
+            if ( defined($fieldval) ) {
+                if ( defined($subfields) ) {
                     die "$field has no subfield $subfields"
-                      unless ( ref( $fieldval ));
-                    $sum += $fieldval->sum( $subfields );
-                } elsif ( $fieldval =~ m/^\s*\d+/o ) {
+                      unless ( ref($fieldval) );
+                    $sum += $fieldval->sum($subfields);
+                }
+                elsif ( $fieldval =~ m/^\s*\d+/o ) {
                     $sum += $fieldval;
                 }
             }
@@ -286,6 +310,7 @@ values. Return a =Foswiki::Contrib::DBCacheContrib::Array= of matching entries.
 sub search {
     my ( $this, $search ) = @_;
     ASSERT($search) if DEBUG;
+
     # Result set not created in the archive
     require Foswiki::Contrib::DBCacheContrib::MemArray;
     my $result = new Foswiki::Contrib::DBCacheContrib::MemArray();
@@ -293,10 +318,10 @@ sub search {
     return $result unless ( $this->FETCHSIZE() > 0 );
 
     my $n = $this->FETCHSIZE();
-    for (my $i = 0; $i < $n; $i++) {
+    for ( my $i = 0 ; $i < $n ; $i++ ) {
         my $meta = $this->FETCH($i);
-        if ( $search->matches( $meta )) {
-            $result->add( $meta );
+        if ( $search->matches($meta) ) {
+            $result->add($meta);
         }
     }
 
@@ -315,36 +340,39 @@ Generates an HTML string representation of the object.
 sub toString {
     my ( $this, $limit, $level, $strung ) = @_;
 
-    if ( !defined( $strung )) {
+    if ( !defined($strung) ) {
         $strung = {};
-    } elsif ( $strung->{$this} ) {
+    }
+    elsif ( $strung->{$this} ) {
         return $this;
     }
-    $level = 0 unless (defined($level));
-    $limit = 2 unless (defined($limit));
+    $level = 0 unless ( defined($level) );
+    $limit = 2 unless ( defined($limit) );
     if ( $level == $limit ) {
         return "$this.....";
     }
     $strung->{$this} = 1;
     my $ss = '';
     if ( $this->FETCHSIZE() > 0 ) {
-        my $n = 0;
+        my $n  = 0;
         my $sz = $this->FETCHSIZE();
-        for (my $i = 0; $i < $sz; $i++) {
+        for ( my $i = 0 ; $i < $sz ; $i++ ) {
             my $entry = $this->FETCH($i);
-            my $item = '';
-            if( ref( $entry )) {
+            my $item  = '';
+            if ( ref($entry) ) {
                 $item .= $entry->toString( $limit, $level + 1, $strung );
-            } elsif( defined( $entry )) {
-                $item .= '"'.$entry.'"';
-            } else {
+            }
+            elsif ( defined($entry) ) {
+                $item .= '"' . $entry . '"';
+            }
+            else {
                 $item .= 'UNDEF';
             }
-            $ss .= CGI::li( $item );
+            $ss .= CGI::li($item);
             $n++;
         }
     }
-    return CGI::ol({start=>0}, $ss);
+    return CGI::ol( { start => 0 }, $ss );
 }
 
 # PUBLIC but not exported
@@ -352,26 +380,28 @@ sub toString {
 # matches the section before the closing bracket and $two matches
 # the section after. throws if the closing bracket isn't found.
 sub mbrf {
-	my ($ob, $cb, $s) = @_;
-	
-	my @a = reverse(split(/ */, $s));
-	my $pre = "";
-	my $d = 0;
-	
-	while ( $#a >= 0 ) {
-        my $c = pop( @a );
-        if ($c eq $cb) {
+    my ( $ob, $cb, $s ) = @_;
+
+    my @a   = reverse( split( / */, $s ) );
+    my $pre = "";
+    my $d   = 0;
+
+    while ( $#a >= 0 ) {
+        my $c = pop(@a);
+        if ( $c eq $cb ) {
             if ( !$d ) {
-                return ( $pre, join("", reverse(@a)));
-            } else {
+                return ( $pre, join( "", reverse(@a) ) );
+            }
+            else {
                 $d--;
             }
-        } elsif ( $c eq $ob ) {
+        }
+        elsif ( $c eq $ob ) {
             $d++;
         }
         $pre .= $c;
-	}
-	die "ERROR: mismatched $ob$cb at $s";
+    }
+    die "ERROR: mismatched $ob$cb at $s";
 }
 
 1;

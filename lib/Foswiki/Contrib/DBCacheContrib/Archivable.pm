@@ -7,23 +7,25 @@ package Foswiki::Contrib::DBCacheContrib::Archivable;
 use Scalar::Util;
 
 sub setArchivist {
-    my $this = shift;
+    my $this      = shift;
     my $archivist = shift;
-    my $done = shift;
+    my $done      = shift;
 
     $done ||= {};
     if ($archivist) {
         $this->{archivist} = $archivist;
-        Scalar::Util::weaken($this->{archivist});
-    } else {
+        Scalar::Util::weaken( $this->{archivist} );
+    }
+    else {
         delete $this->{archivist};
     }
     $done->{$this} = 1;
     foreach my $value (@_) {
-        if ($value
-              && UNIVERSAL::isa($value, __PACKAGE__)
-                && !$done->{$value}) {
-            $value->setArchivist($archivist, $done);
+        if (   $value
+            && UNIVERSAL::isa( $value, __PACKAGE__ )
+            && !$done->{$value} )
+        {
+            $value->setArchivist( $archivist, $done );
         }
     }
 }

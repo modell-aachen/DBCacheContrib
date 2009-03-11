@@ -43,9 +43,10 @@ regarded by the archivist as 'weak' so will be ignored during GC.
 #
 package Foswiki::Contrib::DBCacheContrib::Map;
 use base 'Tie::Hash';
+
 # Mixin archivability
 use Foswiki::Contrib::DBCacheContrib::Archivable;
-push(@ISA, 'Foswiki::Contrib::DBCacheContrib::Archivable');
+push( @ISA, 'Foswiki::Contrib::DBCacheContrib::Archivable' );
 
 use strict;
 use Assert;
@@ -70,10 +71,10 @@ use Assert;
 
 sub TIEHASH {
     my $class = shift;
-    ASSERT(scalar(@_) % 2 == 0) if DEBUG;
+    ASSERT( scalar(@_) % 2 == 0 ) if DEBUG;
     my %args = @_;
-    if ($args{existing}) {
-        ASSERT(UNIVERSAL::isa($args{existing}, __PACKAGE__)) if DEBUG;
+    if ( $args{existing} ) {
+        ASSERT( UNIVERSAL::isa( $args{existing}, __PACKAGE__ ) ) if DEBUG;
         return $args{existing};
     }
     return $class->new(@_);
@@ -81,17 +82,18 @@ sub TIEHASH {
 
 sub new {
     my $class = shift;
-    ASSERT(scalar(@_) % 2 == 0) if DEBUG;
+    ASSERT( scalar(@_) % 2 == 0 ) if DEBUG;
     my %args = @_;
-    my $this = bless({}, $class);
-    if ($args{existing}) {
-        ASSERT(UNIVERSAL::isa($args{existing}, __PACKAGE__)) if DEBUG;
-        $this->setArchivist($args{existing}->getArchivist());
-    } elsif ($args{archivist}) {
-        $this->setArchivist($args{archivist});
+    my $this = bless( {}, $class );
+    if ( $args{existing} ) {
+        ASSERT( UNIVERSAL::isa( $args{existing}, __PACKAGE__ ) ) if DEBUG;
+        $this->setArchivist( $args{existing}->getArchivist() );
     }
-    if ($args{initial}) {
-        $this->parse($args{initial});
+    elsif ( $args{archivist} ) {
+        $this->setArchivist( $args{archivist} );
+    }
+    if ( $args{initial} ) {
+        $this->parse( $args{initial} );
     }
     return $this;
 }
@@ -103,7 +105,7 @@ sub fastget {
 }
 
 sub equals {
-    my ($this, $that) = @_;
+    my ( $this, $that ) = @_;
     return $this == $that;
 }
 
@@ -117,25 +119,32 @@ support toString.
 =cut
 
 sub parse {
-    my ($this, $string) = @_;
+    my ( $this, $string ) = @_;
     my $orig = $string;
-    my $n = 1;
+    my $n    = 1;
     while ( $string !~ m/^[\s,]*$/o ) {
         if ( $string =~ s/^\s*(\w[\w\.]*)\s*=\s*\"(.*?)\"//o ) {
-            $this->STORE($1, $2);
-        } elsif ( $string =~ s/^\s*(\w[\w\.]*)\s*=\s*([^\s,\}]*)//o ) {
-            $this->set($1, $2);
-        } elsif ( $string =~ s/^\s*\"(.*?)\"//o ) {
-            $this->STORE("\$$n", $1);
+            $this->STORE( $1, $2 );
+        }
+        elsif ( $string =~ s/^\s*(\w[\w\.]*)\s*=\s*([^\s,\}]*)//o ) {
+            $this->set( $1, $2 );
+        }
+        elsif ( $string =~ s/^\s*\"(.*?)\"//o ) {
+            $this->STORE( "\$$n", $1 );
             $n++;
-        } elsif ( $string =~ s/^\s*(\w[\w+\.]*)\b//o ) {
-            $this->STORE($1, 'on');
-        } elsif ( $string =~ s/^[^\w\.\"]//o ) {
+        }
+        elsif ( $string =~ s/^\s*(\w[\w+\.]*)\b//o ) {
+            $this->STORE( $1, 'on' );
+        }
+        elsif ( $string =~ s/^[^\w\.\"]//o ) {
+
             # skip bad char or comma
-        } else {
+        }
+        else {
+
             # some other problem
-            die 'Foswiki::Contrib::DBCacheContrib::Map::parse: '.
-              "Badly formatted attribute string at '$string' in '$orig'";
+            die 'Foswiki::Contrib::DBCacheContrib::Map::parse: '
+              . "Badly formatted attribute string at '$string' in '$orig'";
         }
     }
 }
@@ -170,33 +179,46 @@ sub get {
 
     my $res;
     if ( $key =~ m/^(\w+)(.*)$/o ) {
+
         # Sub-expression
         #print STDERR "$1\n";
         my $field = $this->FETCH($1);
-        if ( $2 && ref( $field )) {
+        if ( $2 && ref($field) ) {
+
             #print STDERR "\t...$2\n";
             $res = $field->get( $2, $root );
-        } else {
+        }
+        else {
             $res = $field;
         }
-    } elsif ( $key =~ m/^\.(.*)$/o ) {
+    }
+    elsif ( $key =~ m/^\.(.*)$/o ) {
+
         #print STDERR ".$1\n";
         $res = $this->get( $1, $root );
-    } elsif ( $key =~ m/^\[(.*)$/o ) {
-        my ( $one, $two ) = Foswiki::Contrib::DBCacheContrib::Array::mbrf(
-            "[", "]", $1 );
+    }
+    elsif ( $key =~ m/^\[(.*)$/o ) {
+        my ( $one, $two ) =
+          Foswiki::Contrib::DBCacheContrib::Array::mbrf( "[", "]", $1 );
+
         #print STDERR "[$1]\n";
         my $field = $this->get( $one, $root );
-        if ( $two  && ref( $field )) {
+        if ( $two && ref($field) ) {
+
             #print STDERR "\t...$two\n";
             $res = $field->get( $two, $root );
-        } else {
+        }
+        else {
             $res = $field;
         }
-    } elsif ( $key =~ m/^#(.*)$/o ) {
+    }
+    elsif ( $key =~ m/^#(.*)$/o ) {
+
         #print STDERR "#$1\n";
         $res = $root->get( $1, $root );
-    } else {
+    }
+    else {
+
         #print STDERR "ERROR: bad Map expression at $key\n";
     }
     return $res;
@@ -216,12 +238,13 @@ sub set {
     if ( $attr =~ m/^(\w+)\.(.*)$/o ) {
         $attr = $1;
         my $field = $2;
-        if ( !defined( $this->FETCH($attr) )) {
-            $this->STORE($attr, $this->{archivist}->newMap());
+        if ( !defined( $this->FETCH($attr) ) ) {
+            $this->STORE( $attr, $this->{archivist}->newMap() );
         }
-        $this->FETCH($attr)->set($field, $val);
-    } else {
-        $this->STORE($attr, $val);
+        $this->FETCH($attr)->set( $field, $val );
+    }
+    else {
+        $this->STORE( $attr, $val );
     }
 }
 
@@ -251,11 +274,12 @@ sub remove {
 
     $attr ||= '';
 
-    if ( $attr =~ m/^(\w+)\.(.*)$/o && ref( $this->FETCH($attr) )) {
+    if ( $attr =~ m/^(\w+)\.(.*)$/o && ref( $this->FETCH($attr) ) ) {
         $attr = $1;
         my $field = $2;
-        return $this->FETCH($attr)->remove( $field );
-    } else {
+        return $this->FETCH($attr)->remove($field);
+    }
+    else {
         my $val = $this->FETCH($attr);
         $this->DELETE($attr);
         return $val;
@@ -278,8 +302,8 @@ sub search {
     my $result = new Foswiki::Contrib::DBCacheContrib::MemArray();
 
     foreach my $meta ( $this->getValues() ) {
-        if ( $search->matches( $meta )) {
-            $result->add( $meta );
+        if ( $search->matches($meta) ) {
+            $result->add($meta);
         }
     }
 
@@ -298,30 +322,33 @@ Generates an HTML string representation of the object.
 sub toString {
     my ( $this, $limit, $level, $strung ) = @_;
 
-    if ( !defined( $strung )) {
+    if ( !defined($strung) ) {
         $strung = {};
-    } elsif( $strung->{$this} ) {
+    }
+    elsif ( $strung->{$this} ) {
         return $this;
     }
-    $level = 0 unless (defined($level));
-    $limit = 2 unless (defined($limit));
+    $level = 0 unless ( defined($level) );
+    $limit = 2 unless ( defined($limit) );
     if ( $level == $limit ) {
-        return $this.'.....';
+        return $this . '.....';
     }
     $strung->{$this} = 1;
     my $key;
     my $ss = '';
     foreach my $key ( $this->getKeys() ) {
-        my $item = $key.' = ';
-        my $entry = $this->FETCH( $key );
-        if ( ref( $entry )) {
+        my $item  = $key . ' = ';
+        my $entry = $this->FETCH($key);
+        if ( ref($entry) ) {
             $item .= $entry->toString( $limit, $level + 1, $strung );
-        } elsif ( defined( $entry )) {
-            $item .= '"'.$entry.'"';
-        } else {
+        }
+        elsif ( defined($entry) ) {
+            $item .= '"' . $entry . '"';
+        }
+        else {
             $item .= 'UNDEF';
         }
-        $ss .= CGI::li( $item );
+        $ss .= CGI::li($item);
     }
     return CGI::ul($ss);
 }

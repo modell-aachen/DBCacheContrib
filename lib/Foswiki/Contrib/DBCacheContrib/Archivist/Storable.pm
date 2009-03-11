@@ -9,7 +9,7 @@ use Storable;
 
 sub clear {
     my $this = shift;
-    unlink($this->{_file});
+    unlink( $this->{_file} );
     undef $this->{root};
 }
 
@@ -19,8 +19,9 @@ sub DESTROY {
 }
 
 sub sync {
-    my( $this ) = @_;
+    my ($this) = @_;
     require Storable;
+
     # Clear the archivist to avoid having pointers in the Storable
     $this->{root}->setArchivist(undef) if $this->{root};
     Storable::lock_store( $this->getRoot(), $this->{_file} );
@@ -28,12 +29,13 @@ sub sync {
 }
 
 sub getRoot {
-    my( $this ) = @_;
-    unless ($this->{root} ) {
-        if (-e $this->{_file}) {
+    my ($this) = @_;
+    unless ( $this->{root} ) {
+        if ( -e $this->{_file} ) {
             $this->{root} = Storable::lock_retrieve( $this->{_file} );
             $this->{root}->setArchivist($this);
-        } else {
+        }
+        else {
             $this->{root} = $this->newMap();
         }
     }

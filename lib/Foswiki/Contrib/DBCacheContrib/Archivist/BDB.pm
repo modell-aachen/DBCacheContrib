@@ -19,21 +19,24 @@ my $MAP   = 1;
 my $ARRAY = 2;
 
 sub new {
-    my ($class, $file) = @_;
-    my $this = bless({}, $class);
-    $this->{db} =
-      tie (%{$this->{tie}}, 'BerkeleyDB::Hash',
-           -Flags => DB_CREATE, -Filename => $file);
+    my ( $class, $file ) = @_;
+    my $this = bless( {}, $class );
+    $this->{db} = tie(
+        %{ $this->{tie} }, 'BerkeleyDB::Hash',
+        -Flags    => DB_CREATE,
+        -Filename => $file
+    );
     $this->{stubs} = {};
     return $this;
 }
 
 sub getRoot {
     my $this = shift;
-    unless( $this->{root} ) {
-        if ($this->{tie}->{__ROOT__}) {
-            $this->{root} = $this->decode($this->{tie}->{__ROOT__});
-        } else {
+    unless ( $this->{root} ) {
+        if ( $this->{tie}->{__ROOT__} ) {
+            $this->{root} = $this->decode( $this->{tie}->{__ROOT__} );
+        }
+        else {
             $this->{root} = $this->newMap();
         }
     }
@@ -43,58 +46,72 @@ sub getRoot {
 sub clear {
     my $this = shift;
     $this->{stubs} = {};
-    $this->{root} = undef;
-    if ($this->{db}) {
+    $this->{root}  = undef;
+    if ( $this->{db} ) {
         $this->{tie} = {};
     }
 }
 
 sub DESTROY {
     my $this = shift;
+
     #$this->{db}->db_sync();
     $this->{db} = undef;
-    untie(%{$this->{tie}});
+    untie( %{ $this->{tie} } );
     $this->{stubs} = undef;
 }
 
 sub newMap {
     my $this = shift;
     return new Foswiki::Contrib::DBCacheContrib::Archivist::BDB::Map(
-        archivist => $this, @_);
+        archivist => $this,
+        @_
+    );
 }
 
 sub newArray {
     my $this = shift;
     return new Foswiki::Contrib::DBCacheContrib::Archivist::BDB::Array(
-        archivist => $this, @_);
+        archivist => $this,
+        @_
+    );
 }
 
 sub sync {
-    my ($this, $data) = @_;
+    my ( $this, $data ) = @_;
     return unless $this->{db};
     $this->{tie}->{__ROOT__} = $this->encode($data);
     $this->{db}->db_sync();
 }
 
 sub encode {
-    my ($this, $value) = @_;
+    my ( $this, $value ) = @_;
     my $type = $PERL;
-    if (UNIVERSAL::isa(
-        $value,
-        'Foswiki::Contrib::DBCacheContrib::Archivist::BDB::Map')) {
-        $type = $MAP;
+    if (
+        UNIVERSAL::isa(
+            $value, 'Foswiki::Contrib::DBCacheContrib::Archivist::BDB::Map'
+        )
+      )
+    {
+        $type  = $MAP;
         $value = $value->{id};
-    } elsif (UNIVERSAL::isa(
-        $value,
-        'Foswiki::Contrib::DBCacheContrib::Archivist::BDB::Array')) {
-        $type = $ARRAY;
+    }
+    elsif (
+        UNIVERSAL::isa(
+            $value, 'Foswiki::Contrib::DBCacheContrib::Archivist::BDB::Array'
+        )
+      )
+    {
+        $type  = $ARRAY;
         $value = $value->{id};
-    } elsif (ref($value)) {
-        die "Unstorable type ".ref($value);
-    } else {
+    }
+    elsif ( ref($value) ) {
+        die "Unstorable type " . ref($value);
+    }
+    else {
         $value = '' unless defined $value;
     }
-    $value = pack('ca*', $type, $value);
+    $value = pack( 'ca*', $type, $value );
     return $value;
 }
 
@@ -103,15 +120,17 @@ sub encode {
 # Note that this doesn't re-use stubs when the same id is referenced
 # again. Perhaps it should.
 sub decode {
-    my ($this, $s) = @_;
+    my ( $this, $s ) = @_;
     return $s unless defined $s && length($s);
-    my ($type, $value) = unpack('ca*', $s);
-    if ($type != $PERL) {
-        if ($type == $MAP) {
-            $this->{stubs}->{$value} ||= $this->newMap(id => $value);
-        } elsif ($type == $ARRAY) {
-            $this->{stubs}->{$value} ||= $this->newArray(id => $value);
-        } else {
+    my ( $type, $value ) = unpack( 'ca*', $s );
+    if ( $type != $PERL ) {
+        if ( $type == $MAP ) {
+            $this->{stubs}->{$value} ||= $this->newMap( id => $value );
+        }
+        elsif ( $type == $ARRAY ) {
+            $this->{stubs}->{$value} ||= $this->newArray( id => $value );
+        }
+        else {
             die "Corrupt DB; type $type";
         }
         $value = $this->{stubs}->{$value};
@@ -123,14 +142,15 @@ sub decode {
 # If not passed an id, allocate one. Nothing gets explicitly
 # created in the DB; we just reserve the ID.
 sub allocateID {
-    my ($this, $id) = @_;
+    my ( $this, $id ) = @_;
     my $oid = $this->{tie}->{__ID__} || 0;
-    if (defined $id) {
-        if ($id >= $oid) {
+    if ( defined $id ) {
+        if ( $id >= $oid ) {
             $this->{tie}->{__ID__} = $id + 1;
         }
         return $id;
-    } else {
+    }
+    else {
         $this->{tie}->{__ID__} = $oid + 1;
         return $oid;
     }

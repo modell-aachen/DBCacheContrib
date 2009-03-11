@@ -11,8 +11,8 @@ use Foswiki::Contrib::DBCacheContrib::MemArray;
 use Assert;
 
 sub setArchivist {
-    my ($this, $archivist, $done) = @_;
-    $this->SUPER::setArchivist( $archivist, $done, $this->getValues());
+    my ( $this, $archivist, $done ) = @_;
+    $this->SUPER::setArchivist( $archivist, $done, $this->getValues() );
 }
 
 sub DESTROY {
@@ -26,20 +26,21 @@ sub DESTROY {
 
     # destroy sub objects
     map {
-        $_->DESTROY() if $_
-          && $_ ne $this
-            && ref($_)
+        $_->DESTROY()
+          if $_
+              && $_ ne $this
+              && ref($_)
               && !Scalar::Util::isweak($_)
-                && UNIVERSAL::can($_, 'DESTROY');
-    } values %{$this->{keys}};
+              && UNIVERSAL::can( $_, 'DESTROY' );
+    } values %{ $this->{keys} };
 
     $this->{keys} = undef;
 }
 
 sub STORE {
-    my ($this, $key, $value) = @_;
+    my ( $this, $key, $value ) = @_;
     $this->{keys}{$key} = $value;
-    Scalar::Util::weaken($this->{keys}{$key}) if ($key =~ /^_/);
+    Scalar::Util::weaken( $this->{keys}{$key} ) if ( $key =~ /^_/ );
 }
 
 sub FETCH {
@@ -49,12 +50,12 @@ sub FETCH {
 
 sub FIRSTKEY {
     my $this = shift;
-    return each %{$this->{keys}};
+    return each %{ $this->{keys} };
 }
 
 sub NEXTKEY {
     my ( $this, $lastkey ) = @_;
-    return each %{$this->{keys}};
+    return each %{ $this->{keys} };
 }
 
 sub EXISTS {
@@ -68,23 +69,23 @@ sub DELETE {
 }
 
 sub CLEAR {
-    my ( $this ) = @_;
+    my ($this) = @_;
     $this->{keys} = ();
 }
 
 sub SCALAR {
-    my ( $this ) = @_;
-    return scalar %{$this->{keys}};
+    my ($this) = @_;
+    return scalar %{ $this->{keys} };
 }
 
 sub getKeys {
     my $this = shift;
-    return keys %{$this->{keys}};
+    return keys %{ $this->{keys} };
 }
 
 sub getValues {
     my $this = shift;
-    return values %{$this->{keys}};
+    return values %{ $this->{keys} };
 }
 
 1;

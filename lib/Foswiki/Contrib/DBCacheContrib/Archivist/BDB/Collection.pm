@@ -9,15 +9,15 @@ my $MAP   = 1;
 my $ARRAY = 2;
 
 sub getID {
-    my ($this, $k) = @_;
+    my ( $this, $k ) = @_;
     return $this->{id} unless defined $k;
     return "$this->{id}\0$k";
 }
 
 sub FETCH {
-    my( $this, $key) = @_;
-    return $this->{archivist}->decode(
-        $this->{archivist}->{tie}->{$this->getID($key)});
+    my ( $this, $key ) = @_;
+    return $this->{archivist}
+      ->decode( $this->{archivist}->{tie}->{ $this->getID($key) } );
 }
 
 sub DESTROY {
