@@ -132,14 +132,15 @@ Clients use the DBCache by defining a subclass of the
 |  License: | GPL |
 |  Version: | %$VERSION% |
 |  Change History: | |
+|  7 Apr 2009 | Foswikitask:Item5440: fixed negative values in SUMFIELD Foswikitask:Item8106: add back in the Map methods to the main class, as they are used by subclasses Foswikitask:Item8063: fix the accidental encoding of field values in the cache |
 |  28 Jan 2009 | Foswikitask:Item453: Foswiki version; added Berkeley DB support, dropped plain-file support. Added Michael Daum's EARLIER_THAN_OR_ON and LATER_THAN_OR_ON ops. Fixed a number of bugs. |
 |  12346 | fixing uptodate() for Andrew File Systems; fixed memory leak on persistent perl |   
-|  16347 | remove META data from text hash; include META data in all hash. TWiki:Main.MichaelDaum |
+|  16347 | remove META data from text hash; include META data in all hash. Foswiki:Main.MichaelDaum |
 |  16346 | caching all topic elements to an =all= field to allow th search in all of the text and the formfields like \
-           the normal grep-based SEARCH does. TWiki:Main.MichaelDaum |
-|  15868 | fixed WITHIN_DAYS and EARLIER_THAN. TWiki:Main.MichaelDaum |
-|  15583 | made query parser pluggable so that other plugins can implement their own predicates. TWiki:Main.MichaelDaum |
-|  15019 | added {DBCache}{AlwaysUpdateCache} to remove the updateCache from every operation. TWiki:Main.SvenDowideit |
+           the normal grep-based SEARCH does. Foswiki:Main.MichaelDaum |
+|  15868 | fixed WITHIN_DAYS and EARLIER_THAN. Foswiki:Main.MichaelDaum |
+|  15583 | made query parser pluggable so that other plugins can implement their own predicates. Foswiki:Main.MichaelDaum |
+|  15019 | added {DBCache}{AlwaysUpdateCache} to remove the updateCache from every operation. Foswiki:Main.SvenDowideit |
 |  13562 | Bugs:Item3985 - fixed failures with hierarchical webs |
 |  13527 | Moved the cache into the extensions work areas, instead of the web directory |
 |  12943 | Bugs:Item3659: added automatic conversion of integers to dates |
@@ -173,5 +174,6 @@ Clients use the DBCache by defining a subclass of the
 |  8 Jul 2004 | Initial version, split out from <nop>FormQueryPlugin |
 |  Dependencies: | %$DEPENDENCIES% |
 |  Perl Version: | 5.0 |
-|  Plugin Home: | http://foswiki.org/Extensions/%TOPIC% |
+|  Home: | http://foswiki.org/Extensions/%TOPIC% |
+|  Support: | http://foswiki.org/Support/%TOPIC% |
 

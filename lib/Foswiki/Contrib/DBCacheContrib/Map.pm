@@ -93,7 +93,13 @@ sub new {
         $this->setArchivist( $args{archivist} );
     }
     if ( $args{initial} ) {
-        $this->parse( $args{initial} );
+        if (ref($args{initial}) eq 'HASH') {
+            while (my ($k, $v) = each %{$args{initial}}) {
+                $this->STORE($k, $v);
+            }
+        } else {
+            $this->parse( $args{initial} );
+        }
     }
     return $this;
 }
@@ -310,6 +316,30 @@ sub search {
     return $result;
 }
 
+=begin TML
+
+---+++ =getKeys() -> @keys=
+Overridable method that returns a list even when the object isn't tied.
+
+=cut
+
+sub getKeys {
+    my $this = shift;
+    return keys %$this;
+}
+
+=begin TML
+
+---+++ =getValues() -> @values=
+Overridable method that returns a list even when the object isn't tied.
+
+=cut
+
+sub getValues {
+    my $this = shift;
+    return values %$this;
+}
+
 =begin text
 
 ---+++ =toString($limit, $level, $strung)= -> string
@@ -343,6 +373,7 @@ sub toString {
             $item .= $entry->toString( $limit, $level + 1, $strung );
         }
         elsif ( defined($entry) ) {
+            $entry =~ s/(\W)/'&#'.ord($1).';'/ge;
             $item .= '"' . $entry . '"';
         }
         else {

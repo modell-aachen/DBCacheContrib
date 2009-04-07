@@ -65,7 +65,10 @@ sub BDBArchivist {
 }
 
 sub fixture_groups {
-    return ( [ 'StorableArchivist', 'BDBArchivist' ] );
+    return ( [
+        'StorableArchivist',
+        'BDBArchivist'
+       ] );
 }
 
 1;

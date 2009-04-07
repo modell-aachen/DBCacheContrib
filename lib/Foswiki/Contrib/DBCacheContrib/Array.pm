@@ -115,6 +115,18 @@ sub find {
 
 =begin TML
 
+---+++ =getValues() -> @values=
+Overridable method that returns a list even when the object isn't tied.
+
+=cut
+
+sub getValues {
+    my $this = shift;
+    return @$this;
+}
+
+=begin TML
+
 ---+++ =add($object)=
    * =$object= any perl data type
 Add an element to the end of the array
@@ -288,7 +300,7 @@ sub sum {
                       unless ( ref($fieldval) );
                     $sum += $fieldval->sum($subfields);
                 }
-                elsif ( $fieldval =~ m/^\s*\d+/o ) {
+            } elsif ( $fieldval =~ m/^\s*[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?/ ) {
                     $sum += $fieldval;
                 }
             }

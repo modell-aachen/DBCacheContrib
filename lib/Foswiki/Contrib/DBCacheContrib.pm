@@ -93,111 +93,156 @@ sub cache {
     return $this->{_cache};
 }
 
+######################################################################
+# In order for this class to operate as documented it has to implement
+# Foswiki::Map. However it no longer directly subclasses Map since the
+# move to BerkeleyDB. So we have to facade the cache instead. Note that
+# this will *not* make this class tieable, as it doesn't inherit.
+
+sub getKeys {
+    my $this = shift;
+    return $this->{_cache}->getKeys();
+}
+
+sub getValues {
+    my $this = shift;
+    return $this->{_cache}->getValues();
+}
+
+sub fastget {
+    my $this = shift;
+    return $this->{_cache}->fastget(@_);
+}
+
+sub equals {
+    my $this = shift;
+    return $this->{_cache}->equals(@_);
+}
+
+sub get {
+    my $this = shift;
+    return $this->{_cache}->get(@_);
+}
+
+sub set {
+    my $this = shift;
+    return $this->{_cache}->set(@_);
+}
+
+sub size {
+    my $this = shift;
+    return $this->{_cache}->size(@_);
+}
+
+sub remove {
+    my $this = shift;
+    return $this->{_cache}->remove(@_);
+}
+
+sub search {
+    my $this = shift;
+    return $this->{_cache}->search(@_);
+}
+
+sub toString {
+    my $this = shift;
+    return $this->{_cache}->toString(@_);
+}
+
+## End of facade
+######################################################################
+
 # PRIVATE load a single topic from the given data directory. This
 # ought to be replaced by Foswiki::Func::readTopic -> {$meta, $text) but
 # this implementation is more efficient for just now.
 # returns 1 if the topic was loaded successfully, 0 otherwise
 sub _loadTopic {
-    my ( $this, $dataDir, $topic ) = @_;
-    my $filename = "$dataDir/$topic.txt";
-    my $fh;
+    my ( $this, $web, $topic ) = @_;
 
-    #print STDERR "DBCacheContrib::_loadTopic($filename)\n";
-
-    unless ( open( $fh, "<$filename" ) ) {
-        print STDERR "WARNING: Failed to open $filename\n";
-        return 0;
-    }
+    my ($tom, $text) = Foswiki::Func::readTopic( $web, $topic );
 
     my $meta = $this->{archivist}->newMap();
     $meta->set( 'name',  $topic );
     $meta->set( 'topic', $topic );
-    my @s    = stat($filename);
-    my $time = $s[9];
-    $meta->set( '.cache_file', $filename );
+    # SMELL: core API
+    my $time = $Foswiki::Plugins::SESSION->getApproxRevTime($web, $topic);
+    $meta->set( '.cache_path', "$web.$topic" );
     $meta->set( '.cache_time', $time );
 
-    my $line;
-    my $text = '';
     my $form;
-    my $tailMeta = 0;
-    local $/;
-    my $all = <$fh>;
-    close($fh);
-    my @lines = split( /\r?\n/, $all );
-    while ( scalar(@lines) ) {
-        my $line = shift(@lines);
-        if ( $line =~ m/^%META:FORM{name=\"([^\"]*)\"}%/o ) {
-            $form = $this->{archivist}->newMap() unless $form;
-            my ( $web, $topic ) =
-              Foswiki::Func::normalizeWebTopicName( '', $1 );
-            $form->set( 'name', $web . '.' . $topic );
-            $form->set( '_up',  $meta );
-            $form->set( '_web', $this->{_cache} );
-            $meta->set( 'form', $topic );
-            $meta->set( $topic, $form );
-            $tailMeta = 1;
-        }
-        elsif ( $line =~ m/^%META:TOPICPARENT{name=\"([^\"]*)\"}%/o ) {
-            $meta->set( 'parent', $1 );
-            $tailMeta = 1;
-        }
-        elsif ( $line =~ m/^%META:TOPICINFO{(.*)}%/o ) {
-            my $att = $this->{archivist}->newMap( initial => $1 );
-            $att->set( '_up',  $meta );
-            $att->set( '_web', $this->{_cache} );
-            $meta->set( 'info', $att );
-        }
-        elsif ( $line =~ m/^%META:TOPICMOVED{(.*)}%/o ) {
-            my $att = $this->{archivist}->newMap( initial => $1 );
-            $att->set( '_up',  $meta );
-            $att->set( '_web', $this->{_cache} );
-            $meta->set( 'moved', $att );
-            $tailMeta = 1;
-        }
-        elsif ( $line =~ m/^%META:FIELD{(.*)}%/o ) {
-            my $fs = new Foswiki::Attrs($1);
-            $form = $this->{archivist}->newMap() unless $form;
-            $form->set( '_web',           $this->{_cache} );
-            $form->set( $fs->get('name'), $fs->get('value') );
-            $tailMeta = 1;
-        }
-        elsif ( $line =~ m/^%META:FILEATTACHMENT{(.*)}%/o ) {
-            my $att = $this->{archivist}->newMap( initial => $1 );
-            $att->set( '_up',  $meta );
-            $att->set( '_web', $this->{_cache} );
-            my $atts = $meta->get('attachments');
-            if ( !defined($atts) ) {
-                $atts = $this->{archivist}->newArray();
-                $meta->set( 'attachments', $atts );
-            }
-            $atts->add($att);
-            $tailMeta = 1;
-        }
-        elsif ( $line =~ m/^%META:PREFERENCE{(.*)}%/o ) {
-            my $pref = $this->{archivist}->newMap( initial => $1 );
-            $pref->set( '_up',  $meta );
-            $pref->set( '_web', $this->{_cache} );
-            my $prefs = $meta->get('preferences');
-            if ( !defined($prefs) ) {
-                $prefs = $this->{archivist}->newArray();
-                $meta->set( 'preferences', $prefs );
-            }
-            $prefs->add($pref);
-            $tailMeta = 1;
-        }
-        else {
-            if ( $this->can('readTopicLine') ) {
-                $text .= $this->readTopicLine( $topic, $meta, $line, \@lines );
-            }
-            else {
-                $text .= $line if $line && $line !~ /%META:[A-Z].*?}%/o;
-            }
-        }
+    my $hash;
+
+    if ($hash = $tom->get('FORM')) {
+        $form = $this->{archivist}->newMap();
+        my ( $web, $topic ) =
+          Foswiki::Func::normalizeWebTopicName(
+              '', $hash->{name} );
+        $form->set( 'name', $web . '.' . $topic );
+        $form->set( '_up',  $meta );
+        $form->set( '_web', $this->{_cache} );
+        $meta->set( 'form', $topic );
+        $meta->set( $topic, $form );
     }
-    $text =~ s/\n$//s if $tailMeta;
-    $meta->set( 'text', $text );
-    $meta->set( 'all',  $all );
+    if ( $hash = $tom->get('TOPICPARENT') ) {
+        $meta->set( 'parent', $hash->{name} );
+    }
+    if ( $hash = $tom->get('TOPICINFO') ) {
+        my $att = $this->{archivist}->newMap( initial => $hash );
+        $att->set( '_up',  $meta );
+        $att->set( '_web', $this->{_cache} );
+        $meta->set( 'info', $att );
+    }
+    if ( $hash = $tom->get('TOPICMOVED')) {
+        my $att = $this->{archivist}->newMap( initial => $hash );
+        $att->set( '_up',  $meta );
+        $att->set( '_web', $this->{_cache} );
+        $meta->set( 'moved', $att );
+    }
+    my @fields = $tom->find('FIELD');
+    foreach my $field (@fields) {
+        unless ($form) {
+            $form = $this->{archivist}->newMap() ;
+            $form->set( '_web', $this->{_cache} );
+        }
+        $form->set( $field->{name}, $field->{value} );
+    }
+    my @attachments =  $tom->find('FILEATTACHMENT');
+    foreach my $attachment (@attachments) {
+        my $att = $this->{archivist}->newMap( initial => $attachment );
+        $att->set( '_up',  $meta );
+        $att->set( '_web', $this->{_cache} );
+        my $atts = $meta->get('attachments');
+        if ( !defined($atts) ) {
+            $atts = $this->{archivist}->newArray();
+            $meta->set( 'attachments', $atts );
+        }
+        $atts->add($att);
+    }
+    my @preferences =  $tom->find('PREFERENCE');
+    foreach my $preference (@preferences) {
+        my $pref = $this->{archivist}->newMap( initial => $preference );
+        $pref->set( '_up',  $meta );
+        $pref->set( '_web', $this->{_cache} );
+        my $prefs = $meta->get('preferences');
+        if ( !defined($prefs) ) {
+            $prefs = $this->{archivist}->newArray();
+            $meta->set( 'preferences', $prefs );
+        }
+        $prefs->add($pref);
+    }
+
+    my $processedText = '';
+    if ( $this->can('readTopicLine') ) {
+        my @lines = split(/\r?\n/, $text);
+        while (scalar(@lines)) {
+            my $line = shift(@lines);
+            $text .= $this->readTopicLine( $topic, $meta, $line, \@lines );
+        }
+    } else {
+        $processedText = $text;
+    }
+    $meta->set( 'text', $processedText );
+    $meta->set( 'all',  $tom->getEmbeddedStoreForm() );
     $this->{_cache}->set( $topic, $meta );
 
     return $meta;
@@ -253,7 +298,7 @@ sub _onReload {
                 $topic->set( '_up', $parent );
             }
             else {
-                $topic->set( '_up', $this );
+                $topic->set( '_up', $this->{_cache} );
             }
         }
 
@@ -308,6 +353,7 @@ sub load {
         };
 
         if ($@) {
+            #ASSERT( 0, $@ ) if DEBUG;
             print STDERR "Cache read failed $@...\n" if DEBUG;
             Foswiki::Func::writeWarning("DBCache: Cache read failed: $@");
             $this->{_cache} = undef;
@@ -337,31 +383,30 @@ sub _updateCache {
     my @readTopic;
 
     $web =~ s/\./\//g;
-    my $dataDir = Foswiki::Func::getDataDir() . "/$web";
 
-    #print STDERR "_updateCache from $dataDir\n";
+    #print STDERR "_updateCache for $web\n";
 
     # load topics that are missing from the cache
-    opendir( D, $dataDir ) || return ( 0, 0, 0 );
-    foreach my $topic ( readdir(D) ) {
-        next unless $topic =~ s/\.txt$//;
+    foreach my $topic ( Foswiki::Func::getTopicList($web) ) {
         my $topcache = $this->{_cache}->FETCH($topic);
         if (
             $topcache
             && !uptodate(
-                $topcache->FETCH('.cache_file'),
+                $topcache->FETCH('.cache_path'),
                 $topcache->FETCH('.cache_time')
             )
           )
         {
+            #print STDERR "$web.$topic is out of date\n";
             $this->{_cache}->remove($topic);
             $readFromCache--;
             $topcache = undef;
         }
         if ( !$topcache ) {
 
+            #print STDERR "$web.$topic is not in the cache\n";
             # Not in cache
-            $topcache = $this->_loadTopic( $dataDir, $topic );
+            $topcache = $this->_loadTopic( $web, $topic );
             if ($topcache) {
                 $readFromFile++;
                 push( @readTopic, $topic );
@@ -376,7 +421,6 @@ sub _updateCache {
               && ( $readFromFile >
                   $Foswiki::cfg{DBCacheContrib}{LoadFileLimit} );
     }
-    closedir(D);
 
     # Find smelly topics in the cache
     my $removed = 0;
@@ -402,21 +446,20 @@ sub _updateCache {
 
 =begin text
 
----+++ =uptodate($file, $time)= -> boolean
+---+++ =uptodate($topic, $time)= -> boolean
 Check the file time against what is seen on disc. Return 1 if consistent, 0 if inconsistent.
 
 =cut
 
 sub uptodate {
-    my ( $file, $time ) = @_;
-    if ( -f $file && defined($time) ) {
-        my @sinfo    = stat($file);
-        my $fileTime = $sinfo[9];
-        if ( defined($fileTime) && $fileTime == $time ) {
-            return 1;
-        }
-    }
-    return 0;
+    my ( $path, $time ) = @_;
+    my ($web, $topic) = split(/\./, $path, 2);
+    ASSERT($web, $path) if DEBUG;
+    ASSERT($topic, $path) if DEBUG;
+    # SMELL: core API
+    my $fileTime = $Foswiki::Plugins::SESSION->getApproxRevTime(
+        $web, $topic );
+    return ( $fileTime == $time ) ? 1 : 0;
 }
 
 1;
