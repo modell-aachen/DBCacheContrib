@@ -294,15 +294,14 @@ sub sum {
         my $meta = $this->FETCH($i);
         if ( ref($meta) ) {
             my $fieldval = $meta->get( $field, undef );
-            if ( defined($fieldval) ) {
-                if ( defined($subfields) ) {
-                    die "$field has no subfield $subfields"
-                      unless ( ref($fieldval) );
-                    $sum += $fieldval->sum($subfields);
-                }
-            } elsif ( $fieldval =~ m/^\s*[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?/ ) {
-                    $sum += $fieldval;
-                }
+            next unless defined $fieldval;
+            if ( defined($subfields) ) {
+                die "$field has no subfield $subfields"
+                  unless ( ref($fieldval) );
+                $sum += $fieldval->sum($subfields);
+            } elsif ( $fieldval =~
+                        m/^\s*[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?/ ) {
+                $sum += $fieldval;
             }
         }
     }
