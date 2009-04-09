@@ -165,7 +165,14 @@ sub _loadTopic {
     $meta->set( 'name',  $topic );
     $meta->set( 'topic', $topic );
     # SMELL: core API
-    my $time = $Foswiki::Plugins::SESSION->getApproxRevTime($web, $topic);
+    my $time;
+    if ($Foswiki::Plugins::SESSION->can('getApproxRevTime')) {
+        $time = $Foswiki::Plugins::SESSION->getApproxRevTime($web, $topic);
+    } else {
+        # This is here for TWiki
+        $time = $Foswiki::Plugins::SESSION->{store}->
+          getTopicLatestRevTime($web, $topic);
+    }
     $meta->set( '.cache_path', "$web.$topic" );
     $meta->set( '.cache_time', $time );
 
@@ -353,7 +360,7 @@ sub load {
         };
 
         if ($@) {
-            #ASSERT( 0, $@ ) if DEBUG;
+            ASSERT( 0, $@ ) if DEBUG;
             print STDERR "Cache read failed $@...\n" if DEBUG;
             Foswiki::Func::writeWarning("DBCache: Cache read failed: $@");
             $this->{_cache} = undef;
@@ -457,8 +464,14 @@ sub uptodate {
     ASSERT($web, $path) if DEBUG;
     ASSERT($topic, $path) if DEBUG;
     # SMELL: core API
-    my $fileTime = $Foswiki::Plugins::SESSION->getApproxRevTime(
-        $web, $topic );
+    my $fileTime;
+    if ($Foswiki::Plugins::SESSION->can('getApproxRevTime')) {
+        $fileTime = $Foswiki::Plugins::SESSION->getApproxRevTime($web, $topic);
+    } else {
+        # This is here for TWiki
+        $fileTime = $Foswiki::Plugins::SESSION->{store}->
+          getTopicLatestRevTime($web, $topic);
+    }
     return ( $fileTime == $time ) ? 1 : 0;
 }
 
