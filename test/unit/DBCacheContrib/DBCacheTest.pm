@@ -92,7 +92,7 @@ sub set_up {
         }
     );
 
-    $meta->putKeyed(
+    $meta->put(
         'TOPICINFO',
         {
             author  => "guest",

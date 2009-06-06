@@ -23,7 +23,7 @@ sub new {
     my $class = shift;
     my %args  = @_;
     my $initial;
-    if ( $args{initial} ) {
+    if ( $args{initial}) {
 
         # Delay parsing until we are bound
         $initial = $args{initial};
@@ -41,7 +41,13 @@ sub new {
         $this->{id} = $this->{archivist}->allocateID();
     }
     if ($initial) {
-        $this->parse($initial);
+        if (ref($initial)) {
+            while (my ($k, $v) = each %$initial) {
+                $this->STORE($k, $v);
+            }
+        } else {
+            $this->parse($initial);
+        }
     }
     return $this;
 }
@@ -61,12 +67,14 @@ sub STORE {
 sub FIRSTKEY {
     my $this = shift;
     $this->getKeys();
-    return each %{ $this->{keys} };
+    $this->{keyIt} = 0;
+    return $this->{keys}->[$this->{keyIt}++];
 }
 
 sub NEXTKEY {
     my ( $this, $lastkey ) = @_;
-    return each %{ $this->{keys} };
+    return unless $this->{keyIt} < scalar(@{$this->{keys}});
+    return $this->{keys}->[$this->{keyIt}++];
 }
 
 sub EXISTS {

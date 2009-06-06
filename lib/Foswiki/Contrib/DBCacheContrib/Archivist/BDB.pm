@@ -80,7 +80,7 @@ sub newArray {
 sub sync {
     my ( $this, $data ) = @_;
     return unless $this->{db};
-    $this->{tie}->{__ROOT__} = $this->encode($data);
+    $this->{tie}->{__ROOT__} = $this->encode($data) if $data;
     $this->{db}->db_sync();
 }
 

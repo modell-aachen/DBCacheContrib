@@ -8,7 +8,7 @@ package Foswiki::Contrib::DBCacheContrib;
 
 use strict;
 
-use Foswiki::Attrs;
+use Foswiki::Attrs ();
 use Assert;
 
 =pod
@@ -50,16 +50,18 @@ $RELEASE = 'Foswiki-1';
 
 =pod
 
----+++ =new($web, $cacheName)=
+---+++ =new($web, $cacheName[, $standardSchema])=
+Construct a new DBCache object.
    * =$web= name of web to create the object for.
    * =$cacheName= name of cache file (default "_DBCache")
-
-Construct a new DBCache object.
+   * =$standardSchema= Set to 1 this will load the cache using the
+     'standard' Foswiki schema, rather than the original DBCacheContrib
+     extended schema.
 
 =cut
 
 sub new {
-    my ( $class, $web, $cacheName ) = @_;
+    my ( $class, $web, $cacheName, $standardSchema ) = @_;
     $cacheName ||= '_DBCache';
 
     # Backward compatibility
@@ -75,6 +77,7 @@ sub new {
             _cache     => undef,        # pointer to the DB, load on demand
             _web       => $web,
             _cachename => $cacheName,
+            _standardSchema  => $standardSchema,
         },
         $class
     );
@@ -83,6 +86,7 @@ sub new {
     # a new DB if required.
     my $workDir   = Foswiki::Func::getWorkArea('DBCacheContrib');
     my $cacheFile = "$workDir/$web.$cacheName";
+
     $this->{archivist} =
       $Foswiki::cfg{DBCacheContrib}{Archivist}->new($cacheFile);
     return $this;
@@ -160,10 +164,15 @@ sub _loadTopic {
     my ( $this, $web, $topic ) = @_;
 
     my ($tom, $text) = Foswiki::Func::readTopic( $web, $topic );
+    my $standardSchema = $this->{_standardSchema};
 
     my $meta = $this->{archivist}->newMap();
     $meta->set( 'name',  $topic );
-    $meta->set( 'topic', $topic );
+    if ($standardSchema) {
+        $meta->set( 'web', $web );
+    } else {
+        $meta->set( 'topic', $topic );
+    }
     # SMELL: core API
     my $time;
     if ($Foswiki::Plugins::SESSION->can('getApproxRevTime')) {
@@ -176,64 +185,120 @@ sub _loadTopic {
     $meta->set( '.cache_path', "$web.$topic" );
     $meta->set( '.cache_time', $time );
 
+    my $lookup;
+    my $atts;
+    if ($standardSchema) {
+        # Add a fast lookup table for fields. This must be present
+        # for QueryAcceleratorPlugin
+        $lookup = $this->{archivist}->newMap();
+        $meta->set( '.fields', $lookup );
+        $meta->set( '.form_name', '' );
+        # Create an empty array for the attachments. We have to have this
+        # due to a deficiency in the 1.0.5 query algorithm
+        $atts = $this->{archivist}->newArray();
+        $meta->set( 'META:FILEATTACHMENT', $atts );
+    }
+
     my $form;
     my $hash;
 
     if ($hash = $tom->get('FORM')) {
+        my ( $formWeb, $formTopic ) =
+          Foswiki::Func::normalizeWebTopicName( '', $hash->{name} );
         $form = $this->{archivist}->newMap();
-        my ( $web, $topic ) =
-          Foswiki::Func::normalizeWebTopicName(
-              '', $hash->{name} );
-        $form->set( 'name', $web . '.' . $topic );
-        $form->set( '_up',  $meta );
-        $form->set( '_web', $this->{_cache} );
-        $meta->set( 'form', $topic );
-        $meta->set( $topic, $form );
+        if ($standardSchema) {
+            $form->set( 'name', "$formWeb.$formTopic" );
+            $meta->set( 'META:FORM', $form );
+            $meta->set( '.form_name', "$formWeb.$formTopic" );
+        } else {
+            $form->set( 'name', "$formWeb.$formTopic" );
+            $form->set( '_up',  $meta );
+            $form->set( '_web', $this->{_cache} );
+            $meta->set( 'form', $formTopic );
+        }
+        $meta->set( $formTopic, $form );
     }
     if ( $hash = $tom->get('TOPICPARENT') ) {
-        $meta->set( 'parent', $hash->{name} );
+        if ($standardSchema) {
+            my $parent = $this->{archivist}->newMap( initial => $hash );
+            $meta->set( 'META:TOPICPARENT', $parent );
+        } else {
+            $meta->set( 'parent', $hash->{name} );
+        }
     }
     if ( $hash = $tom->get('TOPICINFO') ) {
         my $att = $this->{archivist}->newMap( initial => $hash );
-        $att->set( '_up',  $meta );
-        $att->set( '_web', $this->{_cache} );
-        $meta->set( 'info', $att );
+        if ($standardSchema) {
+            $meta->set( 'META:TOPICINFO', $att );
+        } else {
+            $att->set( '_up',  $meta );
+            $att->set( '_web', $this->{_cache} );
+            $meta->set( 'info', $att );
+        }
     }
     if ( $hash = $tom->get('TOPICMOVED')) {
         my $att = $this->{archivist}->newMap( initial => $hash );
-        $att->set( '_up',  $meta );
-        $att->set( '_web', $this->{_cache} );
-        $meta->set( 'moved', $att );
+        if ($standardSchema) {
+            $meta->set( 'META:TOPICMOVED', $att );
+        } else {
+            $att->set( '_up',  $meta );
+            $att->set( '_web', $this->{_cache} );
+            $meta->set( 'moved', $att );
+        }
     }
     my @fields = $tom->find('FIELD');
-    foreach my $field (@fields) {
-        unless ($form) {
-            $form = $this->{archivist}->newMap() ;
-            $form->set( '_web', $this->{_cache} );
+    if ( scalar(@fields)) {
+        my $fields;
+        if ($standardSchema) {
+            $fields = $this->{archivist}->newArray();
+            $meta->set( 'META:FIELD', $fields );
         }
-        $form->set( $field->{name}, $field->{value} );
+        foreach my $field (@fields) {
+            if ($standardSchema) {
+                my $att = $this->{archivist}->newMap( initial => $field );
+                $fields->add( $att );
+                $lookup->set( $field->{name}, $att );
+            } else {
+                unless ($form) {
+                    $form = $this->{archivist}->newMap() ;
+                    $form->set( '_web', $this->{_cache} );
+                }
+                $form->set( $field->{name}, $field->{value} );
+            }
+        }
     }
     my @attachments =  $tom->find('FILEATTACHMENT');
     foreach my $attachment (@attachments) {
         my $att = $this->{archivist}->newMap( initial => $attachment );
-        $att->set( '_up',  $meta );
-        $att->set( '_web', $this->{_cache} );
-        my $atts = $meta->get('attachments');
-        if ( !defined($atts) ) {
-            $atts = $this->{archivist}->newArray();
-            $meta->set( 'attachments', $atts );
+        if (!$standardSchema) {
+            $att->set( '_up',  $meta );
+            $att->set( '_web', $this->{_cache} );
+            $atts = $meta->get('attachments');
+            if ( !defined($atts) ) {
+                $atts = $this->{archivist}->newArray();
+                $meta->set( 'attachments', $atts );
+            }
         }
         $atts->add($att);
     }
     my @preferences =  $tom->find('PREFERENCE');
     foreach my $preference (@preferences) {
+        my $prefs;
         my $pref = $this->{archivist}->newMap( initial => $preference );
-        $pref->set( '_up',  $meta );
-        $pref->set( '_web', $this->{_cache} );
-        my $prefs = $meta->get('preferences');
-        if ( !defined($prefs) ) {
-            $prefs = $this->{archivist}->newArray();
-            $meta->set( 'preferences', $prefs );
+        if ($standardSchema) {
+            $prefs = $meta->get('META:PREFERENCE');
+            if ( !defined($prefs) ) {
+                $prefs = $this->{archivist}->newArray();
+                $meta->set( 'META:PREFERENCE', $prefs );
+            }
+        } else {
+            $pref->set( '_up',  $meta );
+            $pref->set( '_web', $this->{_cache} );
+            $prefs = $meta->get('preferences');
+            if ( !defined($prefs) ) {
+                $prefs = $this->{archivist}->newArray();
+                $meta->set( 'preferences', $prefs );
+            }
         }
         $prefs->add($pref);
     }
@@ -249,8 +314,7 @@ sub _loadTopic {
         $processedText = $text;
     }
     $meta->set( 'text', $processedText );
-    $meta->set( 'all',  $tom->getEmbeddedStoreForm() );
-    $this->{_cache}->set( $topic, $meta );
+    $meta->set( 'all',  $tom->getEmbeddedStoreForm() ) unless $standardSchema;
 
     return $meta;
 }
@@ -286,32 +350,34 @@ sub onReload {
 sub _onReload {
     my $this = shift;
 
-    foreach my $topic ( $this->{_cache}->getValues() ) {
+    unless ($this->{_standardSchema}) {
+        foreach my $topic ( $this->{_cache}->getValues() ) {
 
-        # Fill in parent relations
-        unless ( $topic->FETCH('parent') ) {
-            $topic->set( 'parent', $Foswiki::cfg{HomeTopicName} );
+            # Fill in parent relations
+            unless ( $topic->FETCH('parent') ) {
+                $topic->set( 'parent', $Foswiki::cfg{HomeTopicName} );
 
-            # last parent is WebHome
-        }
-        unless ( $topic->FETCH('_up') ) {
-            my $parent = $topic->FETCH('parent');
-            $parent = $this->{_cache}->FETCH($parent) if $parent;
-
-            # prevent the _up to be undefined in case of
-            # a parent info to a non-existing topic;
-            # the parent chain ends at the web hash
-            if ($parent) {
-                $topic->set( '_up', $parent );
+                # last parent is WebHome
             }
-            else {
-                $topic->set( '_up', $this->{_cache} );
-            }
-        }
+            unless ( $topic->FETCH('_up') ) {
+                my $parent = $topic->FETCH('parent');
+                $parent = $this->{_cache}->FETCH($parent) if $parent;
 
-        # set pointer to web
-        $topic->set( '_web', $this->{_cache}, 1 );
-        $topic->set( 'web', $this->{_web} );
+                # prevent the _up to be undefined in case of
+                # a parent info to a non-existing topic;
+                # the parent chain ends at the web hash
+                if ($parent) {
+                    $topic->set( '_up', $parent );
+                }
+                else {
+                    $topic->set( '_up', $this->{_cache} );
+                }
+            }
+
+            # set pointer to web
+            $topic->set( '_web', $this->{_cache}, 1 );
+            $topic->set( 'web', $this->{_web} );
+        }
     }
 
     $this->onReload(@_);
@@ -346,6 +412,7 @@ sub load {
     $web =~ s/\//\./g;
 
     $this->{_cache} = $this->{archivist}->getRoot();
+
     ASSERT( $this->{_cache} ) if DEBUG;
 
     # Check what's there already
@@ -364,10 +431,8 @@ sub load {
             print STDERR "Cache read failed $@...\n" if DEBUG;
             Foswiki::Func::writeWarning("DBCache: Cache read failed: $@");
             $this->{_cache} = undef;
-        }
-
-        if ( $readFromFile || $removed ) {
-            $this->{archivist}->sync();
+        } elsif ( $readFromFile || $removed ) {
+            $this->{archivist}->sync( $this->{_cache} );
         }
     }
 
@@ -414,6 +479,7 @@ sub _updateCache {
             #print STDERR "$web.$topic is not in the cache\n";
             # Not in cache
             $topcache = $this->_loadTopic( $web, $topic );
+            $this->{_cache}->set( $topic, $topcache );
             if ($topcache) {
                 $readFromFile++;
                 push( @readTopic, $topic );

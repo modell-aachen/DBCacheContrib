@@ -1,4 +1,5 @@
-#---+ DBCache
+#---+ Extensions
+#---++ DBCacheContrib
 # This extension is a database cache, used by the DBCachePlugin
 # and FormQueryPlugin.
 
