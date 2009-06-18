@@ -132,6 +132,7 @@ Clients use the DBCache by defining a subclass of the
 |  License: | GPL |
 |  Version: | %$VERSION% |
 |  Change History: | |
+|  18 Jun 2009 | Foswikitask:Item8183: fixed problem with Scalar::Util::weaken that was causing !DBCachePlugin problems |
 |  6 Jun 2009 | Foswikitask:Item1691: changes to support Foswiki:Extensions.QueryAcceleratorPlugin |
 |  7 Apr 2009 | Foswikitask:Item5440: fixed negative values in SUMFIELD Foswikitask:Item8106: add back in the Map methods to the main class, as they are used by subclasses Foswikitask:Item8063: fix the accidental encoding of field values in the cache |
 |  28 Jan 2009 | Foswikitask:Item453: Foswiki version; added Berkeley DB support, dropped plain-file support. Added Michael Daum's EARLIER_THAN_OR_ON and LATER_THAN_OR_ON ops. Fixed a number of bugs. |

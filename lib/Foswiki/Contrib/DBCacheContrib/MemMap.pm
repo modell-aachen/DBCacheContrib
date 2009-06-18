@@ -40,7 +40,8 @@ sub DESTROY {
 sub STORE {
     my ( $this, $key, $value ) = @_;
     $this->{keys}{$key} = $value;
-    Scalar::Util::weaken( $this->{keys}{$key} ) if ( $key =~ /^_/ );
+    Scalar::Util::weaken( $this->{keys}{$key} )
+        if ( ref($value) && $key =~ /^_/ );
 }
 
 sub FETCH {
