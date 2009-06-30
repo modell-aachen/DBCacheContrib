@@ -12,6 +12,12 @@ use Foswiki::Meta;
 
 use Devel::Leak;
 
+my $baseText = <<TEXT;
+CategoryForm
+   * Set HAIR = beehive
+   * Local BEARD = goatee
+TEXT
+
 sub set_up {
     my $this = shift;
 
@@ -113,15 +119,32 @@ sub set_up {
     );
     $meta->put( 'TOPICPARENT', { name => "WebHome", } );
 
+    $meta->putKeyed(
+        'PREFERENCE',
+        {
+            type   => 'Set',
+            name   => "SHIRT",
+            value  => "purple",
+        }
+    );
+    $meta->putKeyed(
+        'PREFERENCE',
+        {
+            type   => 'Local',
+            name   => "TROUSERS",
+            value  => "yellow",
+        }
+    );
+
     Foswiki::Func::saveTopic( $this->{test_web}, "FormTest", $meta,
-        "CategoryForm" );
+        $baseText );
     $this->{test_meta} = $meta;
 }
 
 sub verify_loadSimple {
     my $this = shift;
 
-    my $db  = new Foswiki::Contrib::DBCacheContrib( $this->{test_web} );
+    my $db  = new Foswiki::Contrib::DBCacheContrib( $this->{test_web}, undef, 0, 1 );
     my @res = $db->load();
     $this->assert_str_equals( "0 3 0", join( ' ', @res ) );
     my $topic = $db->cache->get("WebPreferences");
@@ -145,7 +168,7 @@ sub verify_loadSimple {
     $this->assert_str_equals( "1.1",       $info->get("format") );
     $this->assert_str_equals( "1.1",       $info->get("version") );
     $this->assert_str_equals( "WebHome",   $topic->get("parent") );
-    $this->assert_matches( qr/^CategoryForm\s*$/s, $topic->get("text") );
+    $this->assert_str_equals( $baseText, $topic->get("text") );
     $this->assert_str_equals( "ThisForm", $topic->get("form") );
     my $form = $topic->get("ThisForm");
     $this->assert_not_null($form);
@@ -199,6 +222,16 @@ sub verify_loadSimple {
     $this->assert_str_equals( "$this->{test_web}.FormsTest",
         $moved->get("from") );
     $this->assert_str_equals( "$this->{test_web}.FormTest", $moved->get("to") );
+
+    my $sets = $topic->get('_sets');
+    $this->assert_not_null($sets);
+    my ($set, $local) = ($sets->get('Set'), $sets->get('Local'));
+    $this->assert_not_null($set);
+    $this->assert_not_null($local);
+    $this->assert_equals('beehive', $set->get('HAIR'));
+    $this->assert_equals('yellow', $local->get('TROUSERS'));
+    $this->assert_equals('purple', $set->get('SHIRT'));
+    $this->assert_equals('goatee', $local->get('BEARD'));
     $db    = undef;
     $atts  = undef;
     $moved = undef;
@@ -240,7 +273,7 @@ sub verify_cache {
 
     sleep(1);    # wait for clock tick, and re-save one file
     Foswiki::Func::saveTopic( $this->{test_web}, "FormTest", $this->{test_meta},
-        "CategoryForm" );
+        $baseText );
 
     # One file in the cache has been touched
     $db  = new Foswiki::Contrib::DBCacheContrib( $this->{test_web} );
@@ -272,7 +305,7 @@ sub verify_cache {
     Foswiki::Func::moveTopic( $this->{test_web}, "NewFile", "Trash",
         "NewFile$$" );
     Foswiki::Func::saveTopic( $this->{test_web}, "FormTest", $this->{test_meta},
-        "CategoryForm" );
+        $baseText );
     $db  = new Foswiki::Contrib::DBCacheContrib( $this->{test_web} );
     @res = $db->load();
     $this->assert_str_equals( "2 1 1", join( ' ', @res ) );

@@ -93,6 +93,7 @@ Construct a new search node by parsing the passed expression.
 
 sub new {
     my ( $class, $string, $left, $op, $right ) = @_;
+
     my $this;
     if ( defined($string) ) {
         if ( $string =~ m/^\s*$/o ) {

@@ -9,6 +9,7 @@ package Foswiki::Contrib::DBCacheContrib;
 use strict;
 
 use Foswiki::Attrs ();
+use File::Path ();
 use Assert;
 
 =pod
@@ -46,22 +47,24 @@ use vars qw( $initialised $storable $VERSION $RELEASE );
 $initialised = 0;    # Not initialised until the first new
 
 $VERSION = '$Rev$';
-$RELEASE = '18 Jun 2009';
+$RELEASE = '30 Jun 2009';
 
 =pod
 
----+++ =new($web, $cacheName[, $standardSchema])=
+---+++ =new($web, $cacheName[, $standardSchema [, $cachePreferences]])=
 Construct a new DBCache object.
    * =$web= name of web to create the object for.
    * =$cacheName= name of cache file (default "_DBCache")
    * =$standardSchema= Set to 1 this will load the cache using the
      'standard' Foswiki schema, rather than the original DBCacheContrib
      extended schema.
+   * =$cachePreferences= Set to 1 to extract preference settings from each
+     topic and cache them in =_sets->{Set|Local}->{key} = value=
 
 =cut
 
 sub new {
-    my ( $class, $web, $cacheName, $standardSchema ) = @_;
+    my ( $class, $web, $cacheName, $standardSchema, $cachePreferences ) = @_;
     $cacheName ||= '_DBCache';
 
     # Backward compatibility
@@ -85,7 +88,10 @@ sub new {
     # Create the archivist. This will connect to an existing DB or create
     # a new DB if required.
     my $workDir   = Foswiki::Func::getWorkArea('DBCacheContrib');
-    my $cacheFile = "$workDir/$web.$cacheName";
+    File::Path::mkpath("$workDir/$web");
+    my $cacheFile = "$workDir/$web/$cacheName";
+
+    $this->{cachePreferences} = $cachePreferences || 0;
 
     $this->{archivist} =
       $Foswiki::cfg{DBCacheContrib}{Archivist}->new($cacheFile);
@@ -281,7 +287,25 @@ sub _loadTopic {
         }
         $atts->add($att);
     }
-    my @preferences =  $tom->find('PREFERENCE');
+
+    my $processedText = '';
+    if ( $this->can('readTopicLine') ) {
+        my @lines = split(/\r?\n/, $text);
+        while (scalar(@lines)) {
+            my $line = shift(@lines);
+            $text .= $this->readTopicLine( $topic, $meta, $line, \@lines );
+        }
+    } else {
+        $processedText = $text;
+    }
+
+    my $prefsCache;
+    if ($this->{cachePreferences}) {
+        # Extract and cache all preference settings from the topic
+        $prefsCache = $this->{archivist}->newMap();
+        $this->_parsePreferences( $processedText, $prefsCache );
+    }
+    my @preferences = $tom->find('PREFERENCE');
     foreach my $preference (@preferences) {
         my $prefs;
         my $pref = $this->{archivist}->newMap( initial => $preference );
@@ -301,22 +325,62 @@ sub _loadTopic {
             }
         }
         $prefs->add($pref);
+        if ($prefsCache) {
+            $this->_addSetting( $prefsCache,
+                                $preference->{type},
+                                $preference->{name},
+                                $preference->{value} );
+        }
     }
 
-    my $processedText = '';
-    if ( $this->can('readTopicLine') ) {
-        my @lines = split(/\r?\n/, $text);
-        while (scalar(@lines)) {
-            my $line = shift(@lines);
-            $text .= $this->readTopicLine( $topic, $meta, $line, \@lines );
-        }
-    } else {
-        $processedText = $text;
+    if ($prefsCache) {
+        $meta->set( '_sets', $prefsCache );
     }
     $meta->set( 'text', $processedText );
     $meta->set( 'all',  $tom->getEmbeddedStoreForm() ) unless $standardSchema;
 
     return $meta;
+}
+
+sub _addSetting {
+    my ($this, $map, $type, $key, $value) = @_;
+    my $submap = $map->fastget($type);
+    unless ($submap) {
+        $submap = $this->{archivist}->newMap();
+        $map->set($type, $submap);
+    }
+    $submap->set( $key, $value );
+}
+
+# Parse preference settings out of topic text
+sub _parsePreferences {
+    my ($this, $text, $map) = @_;
+    my ($key, $value, $type ) = ( '', '' );
+
+    foreach ( split( "\n", $text ) ) {
+        if (m/$Foswiki::regex{setVarRegex}/os) {
+            if ( defined $type ) {
+                $this->_addSetting($map, $type, $key, $value);
+            }
+            $type  = $1;
+            $key   = $2;
+            $value = ( defined $3 ) ? $3 : '';
+        }
+        elsif ( defined $type ) {
+            if ( /^(   |\t)+ *[^\s]/ && !/$Foswiki::regex{bulletRegex}/o ) {
+
+                # follow up line, extending value
+                $value .= "\n" . $_;
+            }
+            else {
+                $this->_addSetting($map, $type, $key, $value);
+                undef $type;
+            }
+        }
+    }
+    if (defined $type) {
+        $this->_addSetting($map, $type, $key, $value);
+    }
 }
 
 =pod
@@ -441,17 +505,84 @@ sub load {
     return ( $readFromCache, $readFromFile, $removed );
 }
 
+sub loadTopic {
+    my ( $this, $web, $topic ) = @_;
+
+    my $found = 0;
+
+    eval { 
+      $found = $this->_updateTopic($web, $topic); 
+    };
+
+    if ($@) {
+        ASSERT( 0, $@ ) if DEBUG;
+        print STDERR "Cache read failed $@...\n" if DEBUG;
+        Foswiki::Func::writeWarning("DBCache: Cache read failed: $@");
+        $this->{_cache} = undef;
+        $found = 0;
+    } else {
+        $this->{archivist}->sync( $this->{_cache} );
+    }
+
+    if ( $found ) {
+        # refresh relations
+        $this->_onReload( [$topic] );
+    }
+}
+
+# PRIVATE update the cache for the specific topic only
+# optionally track read information, see _updateCache
+sub _updateTopic {
+    my ( $this, $web, $topic, $readInfo ) = @_;
+
+    my $found = 0;
+
+    my $topcache = $this->{_cache}->FETCH($topic);
+    if (
+        $topcache
+        && !uptodate(
+            $topcache->FETCH('.cache_path'),
+            $topcache->FETCH('.cache_time')
+        )
+      )
+    {
+        #print STDERR "$web.$topic is out of date\n";
+        $this->{_cache}->remove($topic);
+        $$readInfo[0]-- if $readInfo;
+        $topcache = undef;
+    }
+    if ( !$topcache ) {
+
+        #print STDERR "$web.$topic is not in the cache\n";
+        # Not in cache
+        $topcache = $this->_loadTopic( $web, $topic );
+        $this->{_cache}->set( $topic, $topcache );
+        if ($topcache) {
+            $$readInfo[1]++ if $readInfo;
+            $found = 1;
+        }
+    }
+    $topcache->set( '.fresh', 1 ) if $topcache;
+
+    return $found;
+}
+
 # PRIVATE update the cache from files
 # return the number of files changed in a tuple
 sub _updateCache {
     my ( $this, $web ) = @_;
 
-    my $readFromCache = $this->{_cache}->size();
+    my @readInfo = (
+      0, # read from cache
+      0, # read from file
+      0, # removed
+    );
+
+    $readInfo[0] = $this->{_cache}->size();
     foreach my $cached ( $this->{_cache}->getValues() ) {
         $cached->set( '.fresh', 0 );
     }
 
-    my $readFromFile = 0;
     my @readTopic;
 
     $web =~ s/\./\//g;
@@ -460,61 +591,37 @@ sub _updateCache {
 
     # load topics that are missing from the cache
     foreach my $topic ( Foswiki::Func::getTopicList($web) ) {
-        my $topcache = $this->{_cache}->FETCH($topic);
-        if (
-            $topcache
-            && !uptodate(
-                $topcache->FETCH('.cache_path'),
-                $topcache->FETCH('.cache_time')
-            )
-          )
-        {
-            #print STDERR "$web.$topic is out of date\n";
-            $this->{_cache}->remove($topic);
-            $readFromCache--;
-            $topcache = undef;
+        if ($this->_updateTopic($web, $topic, \@readInfo)) {
+            push( @readTopic, $topic );
         }
-        if ( !$topcache ) {
-
-            #print STDERR "$web.$topic is not in the cache\n";
-            # Not in cache
-            $topcache = $this->_loadTopic( $web, $topic );
-            $this->{_cache}->set( $topic, $topcache );
-            if ($topcache) {
-                $readFromFile++;
-                push( @readTopic, $topic );
-            }
-        }
-        $topcache->set( '.fresh', 1 ) if $topcache;
 
         #don't disadvantage users just because the cache is off
         last
           if defined( $Foswiki::cfg{DBCacheContrib}{LoadFileLimit} )
               && ( $Foswiki::cfg{DBCacheContrib}{LoadFileLimit} > 0 )
-              && ( $readFromFile >
+              && ( $readInfo[1] >
                   $Foswiki::cfg{DBCacheContrib}{LoadFileLimit} );
     }
 
     # Find smelly topics in the cache
-    my $removed = 0;
     foreach my $cached ( $this->{_cache}->getValues() ) {
         if ( $cached->FETCH('.fresh') ) {
             $cached->remove('.fresh');
         }
         else {
             $this->{_cache}->remove( $cached->FETCH('name') );
-            $readFromCache--;
-            $removed++;
+            $readInfo[0]--;
+            $readInfo[2]++;
         }
     }
 
-    if ( $readFromFile || $removed ) {
+    if ( $readInfo[1] || $readInfo[2] ) {
 
         # refresh relations
         $this->_onReload( \@readTopic );
     }
 
-    return ( $readFromCache, $readFromFile, $removed );
+    return @readInfo;
 }
 
 =begin text
