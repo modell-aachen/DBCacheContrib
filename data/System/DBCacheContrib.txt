@@ -1,7 +1,10 @@
+%META:TOPICINFO{author="micha" date="1246522359" format="1.1" reprev="1.2" version="1.2"}%
 ---+!! %TOPIC%
 
 Reusable code that caches Foswiki topics, and provides fast
 searches of the content.
+
+%TOC%
 
 <!--
 
@@ -28,10 +31,10 @@ Foswiki:Extensions.DBCachePlugin, which support queries and the display of
 query results. When used this way, the %TOPIC% supports queries made using
 a simple [[%TOPIC%#QueryLanguage][query language]].
 
----+++ Features
+---++ Features
    * Perform efficient structured queries on data in forms
 
----+++ Using the built-in query language
+---++ Using the built-in query language
 The query language supported by DBCacheContrib is very similar to the query language used with %SEARCH, which was derived from it. However the underlying schema is somewhat different.
 
 You can think of the database as an map of all the topics in a web. Each
@@ -39,7 +42,7 @@ entry is itself a map (or hash, in perl terms) that maps a set of field
 names to values.
 
 Each topic in the web automatically gets a number of standard fields, generated
-by reading the metadata from the topic (see %TWIKIWEB%.TWikiMetaData)
+by reading the metadata from the topic (see %SYSTEMWEB%.MetaData)
 	* =name=        - name of the topic
 	* =parent=      - *name* of parent topic
 	* =_up=         - _reference_ to the Map of the parent topic, if it exists
@@ -78,9 +81,9 @@ The sub-maps created for =info=, _form name_, =moved=, and each row in
 Other fields may be added by subclasses. Refer to the documentation for the
 plugin that is using the DBCache for more details.
 
----++++ Query operators
+---++ Query operators
 %STARTSECTION{"searchoperators"}%
-Fields are given by name, and values by strings or numbers. Strings should always be surrounded by 'single-quotes'. Strings which are regular expressions (RHS of =, != =~ operators) use 'perl' regular expression syntax (google for =perlre= for help). Numbers can be signed integers or decimals. Single quotes in values may be escaped using backslash (\).
+Fields are given by name, and values by strings or numbers. Strings should always be surrounded by 'single-quotes'. Strings which are regular expressions (RHS of <nop>=, !<nop>= <nop>=~ operators) use 'perl' regular expression syntax (google for =perlre= for help). Numbers can be signed integers or decimals. Single quotes in values may be escaped using backslash (\).
 
 The following operators are available:
 | *Operator* | *Result* | *Meaning* |
@@ -93,9 +96,9 @@ The following operators are available:
 | <code>&lt;=</code> | Boolean | Numeric <= |
 | =lc= | String | Unary lower case |
 | =uc= | String | Unary UPPER CASE |
-| =IS_DATE= | Compare two dates e.g. '1 Apr 2003' IS_DATE '1 Apr 2004' |
-| =EARLIER_THAN= | BOOLEAN | Date is earlier than the given date |
-| =EARLIER_THAN_OR_ON= | BOOLEAN | Date is earlier than, or on, the given date |
+| =IS_DATE= | Boolean | Compare two dates e.g. '1 Apr 2003' IS_DATE '1 Apr 2004' |
+| =EARLIER_THAN= | Boolean | Date is earlier than the given date |
+| =EARLIER_THAN_OR_ON= | Boolean | Date is earlier than, or on, the given date |
 | =LATER_THAN= | Boolean | LHS is later than the given date |
 | =LATER_THAN_OR_ON= | Boolean | LHS is later than the given date |
 | =WITHIN_DAYS= | Boolean | Date (which must be in the future) is within n _working_ days of todays date |
@@ -104,11 +107,11 @@ The following operators are available:
 | =OR= | Boolean | OR |
 | <code>()</code> | any | Bracketed subexpression |
 
-Dates for the date operators (=IS_DATE=, =EARLIER_THAN= etc) must be dates in the format expected by =Time::ParseDate= (like the ActionTrackerPlugin). =WITHIN_DAYS= works out the number of _working_ days assuming a 5 day week (i.e. excluding Saturday and Sunday). Apologies in advance if your weekend is offset &plusmn; a day! Integers will automatically be converted to dates, by assuming they represent a number of seconds since midnight GMT on 1st January 1970. You can also use the =d2n= operator to convert a date string to such an integer.
+Dates for the date operators (=IS_DATE=, =EARLIER_THAN= etc) must be dates in the format expected by =Time::ParseDate= (like the [[Foswiki:Extensions/ActionTrackerPlugin][ActionTrackerPlugin]]). =WITHIN_DAYS= works out the number of _working_ days assuming a 5 day week (i.e. excluding Saturday and Sunday). Apologies in advance if your weekend is offset &plusmn; a day! Integers will automatically be converted to dates, by assuming they represent a number of seconds since midnight GMT on 1st January 1970. You can also use the =d2n= operator to convert a date string to such an integer.
 
 %ENDSECTION{"searchoperators"}%
 
----+++ The cache
+---++ The cache
 To achieve best perfomance the plugin caches the data read from topics in a
 database. The database is stored in the work area for the DBCacheContrib (see
 ={WorkAreaDir}= in =configure=). If any topic changes in the web, this
@@ -130,6 +133,7 @@ Clients use the DBCache by defining a subclass of the
 |  Author: | Foswiki:Main/CrawfordCurrie http://c-dot.co.uk |
 |  Copyright &copy;: | This code is based on an original development of Motorola Inc. and is protected by the following copyrights: <br>Copyright @copy 2002-2003 Motorola Inc. All Rights Reserved. <br>Portions copyright &copy; 2004. Crawford Currie http://www.c-dot.co.uk |
 |  License: | GPL |
+|  Release: | %$RELEASE% |
 |  Version: | %$VERSION% |
 |  Change History: | |
 |  30 Jun 2009 | Foswikitask:Item8153: make dirs for path to cache; Foswikitask:Item8194: incoporated patch from Foswiki:Main.MichaelDaum Foswikitask:Item8195: extract and cache permissions settings |
@@ -158,7 +162,7 @@ Clients use the DBCache by defining a subclass of the
 |  8110 | TWikibug:Item663 - formatting and text fixes |
 |  7552 | TWikibug:Item997 - test update |
 |  7274 | TWikibug:Item719 - onReload() is not a static method. |
-|  7262 | TWikibug:Item719 - MichaelDaum's patch (almost) to correct parameters to onReload |
+|  7262 | TWikibug:Item719 - Foswiki:Main.MichaelDaum's patch (almost) to correct parameters to onReload |
 |  7260 | TWikibug:Item727 - made it clean the form name using normaliseWebTopicName |
 |  6353 | TWikibug:Item380 - do as the man says; make all $/ local |
 |  5720 | Updated tests |
@@ -166,7 +170,7 @@ Clients use the DBCache by defining a subclass of the
 |  5229 | Small improvement to the way it handles errors from Storable and Archive |
 |  5223 | Documentation fixes, adding gifs. |
 |  5048 | Cairo readiness |
-|  5036 | Split from SharedCode |
+|  5036 | Split from <nop>SharedCode |
 |  5031 | Moving to new name |
 |  5030 | About to rename |
 |  5019 | Improved topic data model, cleaned up tests |
