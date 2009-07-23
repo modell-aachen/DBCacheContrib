@@ -1,6 +1,5 @@
-#
-# Copyright (C) Crawford Currie 2009 http://c-dot.co.uk
-#
+# See bottom of file for license and copyright information
+
 # Each map stored in the DB has a unique handle
 # The data in the map is stored using the handle
 # So, we tie a Map to the particular key we are interested in.
@@ -9,13 +8,14 @@
 # to a key.
 
 package Foswiki::Contrib::DBCacheContrib::Archivist::BDB::Map;
-use base 'Foswiki::Contrib::DBCacheContrib::Map';
-
-# Mixin collections code
-use Foswiki::Contrib::DBCacheContrib::Archivist::BDB::Collection;
-push( @ISA, 'Foswiki::Contrib::DBCacheContrib::Archivist::BDB::Collection' );
-
 use strict;
+
+use Foswiki::Contrib::DBCacheContrib::Map ();
+# Mixin collections code
+use Foswiki::Contrib::DBCacheContrib::Archivist::BDB::Collection ();
+our @ISA = ( 'Foswiki::Contrib::DBCacheContrib::Map',
+         'Foswiki::Contrib::DBCacheContrib::Archivist::BDB::Collection' );
+
 use Assert;
 
 # Create a new hash, or bind to an existing hash if id is passed
@@ -58,10 +58,10 @@ sub STORE {
     my %keys = map { $_ => 1 } $this->getKeys();
     unless ( $keys{$key} ) {
         push( @{ $this->{keys} }, $key );
-        $this->{archivist}->{tie}->{"__K__$this->{id}"} =
-          join( "\0", @{ $this->{keys} } );
+        $this->{archivist}->db_set(
+            'K'.$this->{id}, join( "\0", @{ $this->{keys} } ));
     }
-    $this->{archivist}->{tie}->{$id} = $this->{archivist}->encode($value);
+    $this->{archivist}->db_set($id, $this->{archivist}->encode($value));
 }
 
 sub FIRSTKEY {
@@ -79,16 +79,16 @@ sub NEXTKEY {
 
 sub EXISTS {
     my ( $this, $key ) = @_;
-    return exists $this->{archivist}->{tie}->{ $this->getID($key) };
+    return $this->{archivist}->db_exists( $this->getID($key) );
 }
 
 sub DELETE {
     my ( $this, $key ) = @_;
-    delete $this->{archivist}->{tie}->{ $this->getID($key) };
+    $this->{archivist}->db_delete( $this->getID($key) );
     $this->getKeys();
     my %keys = map { $_ => 1 } $this->getKeys();
     delete( $keys{$key} );
-    $this->{archivist}->{tie}->{"__K__$this->{id}"} = join( "\0", keys %keys );
+    $this->{archivist}->db_set('K'.$this->{id}, join( "\0", keys %keys ));
     $this->{keys} = undef;
 }
 
@@ -109,7 +109,7 @@ sub getKeys {
 
     unless ( defined $this->{keys} ) {
         @{ $this->{keys} } =
-          split( "\0", $this->{archivist}->{tie}->{"__K__$this->{id}"} || '' );
+          split( "\0", $this->{archivist}->db_get('K'.$this->{id}) || '' );
     }
 
     return @{ $this->{keys} };
@@ -126,3 +126,21 @@ sub getValues {
 }
 
 1;
+__END__
+
+Copyright (C) Crawford Currie 2009, http://c-dot.co.uk
+and Foswiki Contributors. Foswiki Contributors are listed in the
+AUTHORS file in the root of this distribution. NOTE: Please extend
+that file, not this notice.
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version. For
+more details read LICENSE in the root of this distribution.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+As per the GPL, removal of this notice is prohibited.

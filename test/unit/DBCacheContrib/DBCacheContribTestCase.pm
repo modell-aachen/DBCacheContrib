@@ -23,14 +23,15 @@ sub tear_down {
     $this->{ar}->clear() if $this->{ar};
 
     $this->SUPER::tear_down();
+
+    unlink($this->{tempfn}) if $this->{tempfn};
 }
 
 sub setArchivist {
     my ( $this, $archivist ) = @_;
     $this->{archivist} = $archivist;
-    my $tmpfile = new File::Temp( UNLINK => 1 );
-    $this->{ar}     = $archivist->new( $tmpfile->filename );
-    $this->{tempfn} = $tmpfile->filename;
+    $this->{tempfn} = File::Temp::tmpnam();
+    $this->{ar}     = $archivist->new( $this->{tempfn} );
 }
 
 sub StorableArchivist {

@@ -1,14 +1,14 @@
-#
-# Copyright (C) Crawford Currie 2009 http://c-dot.co.uk
-#
+# See bottom of file for license and copyright information
+
 package Foswiki::Contrib::DBCacheContrib::Archivist::BDB::Array;
-use base 'Foswiki::Contrib::DBCacheContrib::Array';
-
-# Mixin collections code
-use Foswiki::Contrib::DBCacheContrib::Archivist::BDB::Collection;
-push( @ISA, 'Foswiki::Contrib::DBCacheContrib::Archivist::BDB::Collection' );
-
 use strict;
+
+use Foswiki::Contrib::DBCacheContrib::Array ();
+# Mixin collections code
+use Foswiki::Contrib::DBCacheContrib::Archivist::BDB::Collection ();
+our @ISA = ( 'Foswiki::Contrib::DBCacheContrib::Array',
+         'Foswiki::Contrib::DBCacheContrib::Archivist::BDB::Collection' );
+
 use Assert;
 
 sub new {
@@ -33,13 +33,16 @@ sub STORE {
     if ( $index >= $this->FETCHSIZE() ) {
         $this->STORESIZE( $index + 1 );
     }
-    $this->{archivist}->{tie}->{ $this->getID($index) } =
-      $this->{archivist}->encode($value);
+    $this->{archivist}->db_set(
+        $this->getID($index), $this->{archivist}->encode($value));
 }
 
 sub FETCHSIZE {
     my ($this) = @_;
-    return $this->{archivist}->{tie}->{"__S__$this->{id}"} || 0;
+    unless (defined $this->{size}) {
+        $this->{size} = $this->{archivist}->db_get('S'.$this->{id}) || 0;
+    }
+    return $this->{size};
 }
 
 sub STORESIZE {
@@ -47,15 +50,16 @@ sub STORESIZE {
     my $sz = $this->FETCHSIZE();
     if ( $count > $sz ) {
         for ( my $i = $sz ; $i < $count ; $i++ ) {
-            $this->{archivist}->{tie}->{ $this->getID($i) } = '';
+            $this->{archivist}->db_set( $this->getID($i), '');
         }
     }
     elsif ( $count < $sz ) {
         for ( my $i = $count ; $i < $sz ; $i++ ) {
-            delete $this->{archivist}->{tie}->{ $this->getID($i) };
+            $this->{archivist}->db_delete( $this->getID($i) );
         }
     }
-    $this->{archivist}->{tie}->{"__S__$this->{id}"} = $count;
+    $this->{size} = $count;
+    $this->{archivist}->db_set( 'S'.$this->{id}, $count );
 }
 
 sub EXISTS {
@@ -89,3 +93,21 @@ sub getValues {
 }
 
 1;
+__END__
+
+Copyright (C) Crawford Currie 2009, http://c-dot.co.uk
+and Foswiki Contributors. Foswiki Contributors are listed in the
+AUTHORS file in the root of this distribution. NOTE: Please extend
+that file, not this notice.
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version. For
+more details read LICENSE in the root of this distribution.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+As per the GPL, removal of this notice is prohibited.

@@ -1,13 +1,11 @@
-#
-# Copyright (C) Motorola 2003 - All rights reserved
-# Copyright (C) Crawford Currie 2004, 2009
-#
+# See bottom of file for license and copyright information
 
 =begin TML
+
 ---++ package Foswiki::Contrib::DBCacheContrib::Map
 
 This is an interface that is implemented by all back-end stores
-(archivists). A Map is basically a hash table, and indeed can be
+(archivists). A Map is basically a hash table, and can be
 tied to a perl hash.
 
 Objects of this class are created using the =newMap= interface defined
@@ -42,13 +40,15 @@ regarded by the archivist as 'weak' so will be ignored during GC.
 # You are recommended to use those factories.
 #
 package Foswiki::Contrib::DBCacheContrib::Map;
-use base 'Tie::Hash';
-
-# Mixin archivability
-use Foswiki::Contrib::DBCacheContrib::Archivable;
-push( @ISA, 'Foswiki::Contrib::DBCacheContrib::Archivable' );
 
 use strict;
+
+use Tie::Hash ();
+# Mixin archivability
+use Foswiki::Contrib::DBCacheContrib::Archivable;
+
+our @ISA = ( 'Tie::Hash', 'Foswiki::Contrib::DBCacheContrib::Archivable' );
+
 use Assert;
 
 # To operate as a tie, subclasses must implement the methods of
@@ -68,17 +68,6 @@ use Assert;
 # initial content { a => 1, b => 2 }
 # =tie(%map, ref($obj), existing=>$obj)= will tie %map to $obj so you can
 # refer to $map{a} and $map{b}.
-
-sub TIEHASH {
-    my $class = shift;
-    ASSERT( scalar(@_) % 2 == 0 ) if DEBUG;
-    my %args = @_;
-    if ( $args{existing} ) {
-        ASSERT( UNIVERSAL::isa( $args{existing}, __PACKAGE__ ) ) if DEBUG;
-        return $args{existing};
-    }
-    return $class->new(@_);
-}
 
 sub new {
     my $class = shift;
@@ -104,23 +93,39 @@ sub new {
     return $this;
 }
 
+sub TIEHASH {
+    my $class = shift;
+    ASSERT( scalar(@_) % 2 == 0 ) if DEBUG;
+    my %args = @_;
+    if ( $args{existing} ) {
+        ASSERT( UNIVERSAL::isa( $args{existing}, __PACKAGE__ ) ) if DEBUG;
+        return $args{existing};
+    }
+    return $class->new(@_);
+}
+
 # Synonym for FETCH, maintained for compatibility
 sub fastget {
     my $this = shift;
     return $this->FETCH(@_);
 }
 
+# SMELL: is this really required?
 sub equals {
     my ( $this, $that ) = @_;
     return $this == $that;
 }
 
-=begin text
+=begin TML
 
----++ package Foswiki::Contrib::DBCacheContrib::Map
-Generic map object for mapping names to things.
-Objects in the map are either strings, or other objects that must
-support toString.
+---++ ObjectMethod parse($string)
+
+Parse a bunch of key-value expressions in $string and add them to the
+map. $string is a space-or-comma separated list of key=value pairs, where
+values can be enclosed in quotes (either single or double). Keys must be
+alphanumeric plus '.'. For example:
+
+this.that='the other', one3three=four five="5"
 
 =cut
 
@@ -129,8 +134,8 @@ sub parse {
     my $orig = $string;
     my $n    = 1;
     while ( $string !~ m/^[\s,]*$/o ) {
-        if ( $string =~ s/^\s*(\w[\w\.]*)\s*=\s*\"(.*?)\"//o ) {
-            $this->STORE( $1, $2 );
+        if ( $string =~ s/^\s*(\w[\w\.]*)\s*=\s*(["'])(.*?)\2//o ) {
+            $this->STORE( $1, $3 );
         }
         elsif ( $string =~ s/^\s*(\w[\w\.]*)\s*=\s*([^\s,\}]*)//o ) {
             $this->set( $1, $2 );
@@ -142,7 +147,7 @@ sub parse {
         elsif ( $string =~ s/^\s*(\w[\w+\.]*)\b//o ) {
             $this->STORE( $1, 'on' );
         }
-        elsif ( $string =~ s/^[^\w\.\"]//o ) {
+        elsif ( $string =~ s/^[^\w\."]//o ) {
 
             # skip bad char or comma
         }
@@ -155,7 +160,7 @@ sub parse {
     }
 }
 
-=begin text
+=begin TML
 
 ---+++ =get($k, $root)= -> datum
    * =$k= - key
@@ -230,7 +235,7 @@ sub get {
     return $res;
 }
 
-=begin text
+=begin TML
 
 ---+++ =set($k, $v)=
    * =$k= - key
@@ -254,7 +259,7 @@ sub set {
     }
 }
 
-=begin text
+=begin TML
 
 ---+++ =size()= -> integer
 Get the size of the map
@@ -267,11 +272,11 @@ sub size {
     return scalar( $this->getKeys() );
 }
 
-=begin text
+=begin TML
 
 ---+++ =remove($index)= -> old value
    * =$index= - integer index
-Remove an entry at an index from the array. Return the old value.
+Remove an entry at an index from the map. Return the old value.
 
 =cut
 
@@ -292,7 +297,7 @@ sub remove {
     }
 }
 
-=begin text
+=begin TML
 
 ---+++ =search($search)= -> search result
    * =$search= - Foswiki::Contrib::DBCacheContrib::Search object to use in the search
@@ -340,7 +345,7 @@ sub getValues {
     return values %$this;
 }
 
-=begin text
+=begin TML
 
 ---+++ =toString($limit, $level, $strung)= -> string
    * =$limit= - recursion limit for expansion of elements
@@ -385,3 +390,25 @@ sub toString {
 }
 
 1;
+__END__
+
+Copyright (C) Crawford Currie 2004-2009, http://c-dot.co.uk
+and Foswiki Contributors. Foswiki Contributors are listed in the
+AUTHORS file in the root of this distribution. NOTE: Please extend
+that file, not this notice.
+
+Additional copyrights apply to some or all of the code in this module
+as follows:
+   * Copyright (C) Motorola 2003 - All rights reserved
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version. For
+more details read LICENSE in the root of this distribution.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+As per the GPL, removal of this notice is prohibited.

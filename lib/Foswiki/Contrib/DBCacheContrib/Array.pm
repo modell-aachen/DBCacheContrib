@@ -1,22 +1,4 @@
-#
-# Copyright (C) Motorola 2003 - All rights reserved
-# Copyright (C) Crawford Currie 2004
-#
-# NOTE: this is a pure virtual base class. Implementors are required to
-# implement the additional methods required by Tie::Array viz.
-# TIEARRAY, FETCH, FETCHSIZE, STORE, STORESIZE, EXISTS, and DELETE.
-# The Foswiki::Contrib::DBCacheContrib::MemArray class provides an in-memory
-# implementation of this interface.
-#
-package Foswiki::Contrib::DBCacheContrib::Array;
-use base 'Tie::Array';
-
-# Mixin archivability
-use Foswiki::Contrib::DBCacheContrib::Archivable;
-push( @ISA, 'Foswiki::Contrib::DBCacheContrib::Archivable' );
-
-use strict;
-use Assert;
+# See bottom of file for license and copyright information
 
 =begin TML
 
@@ -42,9 +24,23 @@ tie(@array, ref($obj), $obj);
 
 =cut
 
+package Foswiki::Contrib::DBCacheContrib::Array;
+
+use strict;
+
+use Tie::Array ();
+# Mixin archivability
+use Foswiki::Contrib::DBCacheContrib::Archivable ();
+
+our @ISA = ('Tie::Array', 'Foswiki::Contrib::DBCacheContrib::Archivable');
+
+use Assert;
+
+use Foswiki::Contrib::DBCacheContrib::Search ();
+
 # This is a virtual base class. See MemArray for an example implementation.
 # To operate as a tie, subclasses must implement the methods of
-# Tie::Array, except TIEHASH, and must implement new(). Additional new()
+# Tie::Array, except TIEARRAY, and must implement new(). Additional new()
 # parameters are passed by name.
 # Parameters required to be supported by new() in subclasses are as follows:
 #    * =archivist= - reference to an object that implements
@@ -58,18 +54,6 @@ tie(@array, ref($obj), $obj);
 # =tie(@array, ref($obj), existing=>$obj)= will tie @array to $obj so you can
 # write =$array[0] = 1= etc.
 
-use Foswiki::Contrib::DBCacheContrib::Search;
-
-sub TIEARRAY {
-    my $class = shift;
-    my %args  = @_;
-    if ( $args{existing} ) {
-        ASSERT( UNIVERSAL::isa( $args{existing}, __PACKAGE__ ) ) if DEBUG;
-        return $args{existing};
-    }
-    return $class->new(@_);
-}
-
 sub new {
     my $class = shift;
     my %args  = @_;
@@ -82,6 +66,16 @@ sub new {
         $this->setArchivist( $args{archivist} );
     }
     return $this;
+}
+
+sub TIEARRAY {
+    my $class = shift;
+    my %args  = @_;
+    if ( $args{existing} ) {
+        ASSERT( UNIVERSAL::isa( $args{existing}, __PACKAGE__ ) ) if DEBUG;
+        return $args{existing};
+    }
+    return $class->new(@_);
 }
 
 # Synonym for FETCH, maintained for compatibility
@@ -138,7 +132,7 @@ sub add {
     return $this->PUSH(shift);
 }
 
-=begin text
+=begin TML
 
 ---+++ =remove($index)=
    * =$index= - integer index
@@ -151,7 +145,7 @@ sub remove {
     $this->SPLICE( $i, 1 );
 }
 
-=begin text
+=begin TML
 
 ---+++ =get($key, $root)= -> datum
    * =$k= - key
@@ -258,7 +252,7 @@ sub get {
     return $res;
 }
 
-=begin text
+=begin TML
 
 ---+++ =size()= -> integer
 Get the size of the array
@@ -270,7 +264,7 @@ sub size {
     return $this->FETCHSIZE();
 }
 
-=begin text
+=begin TML
 
 ---+++ =sum($field)= -> number
    * =$field= - name of a field in the class of objects stored by this array
@@ -309,7 +303,7 @@ sub sum {
     return $sum;
 }
 
-=begin text
+=begin TML
 
 ---+++ =search($search)= -> search result
    * =$search= - Foswiki::Contrib::DBCacheContrib::Search object to use in the search
@@ -339,7 +333,7 @@ sub search {
     return $result;
 }
 
-=begin text
+=begin TML
 
 ---+++ =toString($limit, $level, $strung)= -> string
    * =$limit= - recursion limit for expansion of elements
@@ -416,3 +410,25 @@ sub mbrf {
 }
 
 1;
+__END__
+
+Copyright (C) Crawford Currie 2004-2009, http://c-dot.co.uk
+and Foswiki Contributors. Foswiki Contributors are listed in the
+AUTHORS file in the root of this distribution. NOTE: Please extend
+that file, not this notice.
+
+Additional copyrights apply to some or all of the code in this module
+as follows:
+   * Copyright (C) Motorola 2003 - All rights reserved
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version. For
+more details read LICENSE in the root of this distribution.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+As per the GPL, removal of this notice is prohibited.

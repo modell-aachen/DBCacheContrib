@@ -1,23 +1,19 @@
-#
-# Copyright (C) Motorola 2003 - All rights reserved
-# Copyright (C) Crawford Currie 2004 - All rights reserved
-#
+# See bottom of file for license and copyright information
+
 package Foswiki::Contrib::DBCacheContrib;
 
-#use base 'Foswiki::Contrib::DBCacheContrib::Map';
-
 use strict;
+use Assert;
 
 use Foswiki::Attrs ();
 use File::Path ();
-use Assert;
 
-=pod
+=begin TML
 
----++ class DBCacheContrib
+---++ package DBCacheContrib
 
-General purpose cache that treats topics as hashes. Useful for
-rapid read and search of the database. Only works on one web.
+General purpose cache that presents Foswiki topics as expanded hashes
+Useful for rapid read and search of the database. Only works on one web.
 
 Typical usage:
 <verbatim>
@@ -42,19 +38,16 @@ As topics are loaded, the readTopicLine method gives subclasses an opportunity t
 
 =cut
 
-use vars qw( $initialised $storable $VERSION $RELEASE );
+our $VERSION = '$Rev$';
+our $RELEASE = '30 Jun 2009';
+our $SHORTDESCRIPTION = 'Reusable code that treats forms as if they were table rows in a database';
 
-$initialised = 0;    # Not initialised until the first new
-
-$VERSION = '$Rev$';
-$RELEASE = '30 Jun 2009';
-
-=pod
+=begin TML
 
 ---+++ =new($web, $cacheName[, $standardSchema [, $cachePreferences]])=
 Construct a new DBCache object.
    * =$web= name of web to create the object for.
-   * =$cacheName= name of cache file (default "_DBCache")
+   * =$cacheName= name of cache file
    * =$standardSchema= Set to 1 this will load the cache using the
      'standard' Foswiki schema, rather than the original DBCacheContrib
      extended schema.
@@ -65,7 +58,7 @@ Construct a new DBCache object.
 
 sub new {
     my ( $class, $web, $cacheName, $standardSchema, $cachePreferences ) = @_;
-    $cacheName ||= '_DBCache';
+    $cacheName ||= '_DBCache' . ($standardSchema ? '_standard' : '');
 
     # Backward compatibility
     unless ( $Foswiki::cfg{DBCacheContrib}{Archivist} ) {
@@ -75,26 +68,27 @@ sub new {
     eval "use $Foswiki::cfg{DBCacheContrib}{Archivist}";
     die $@ if ($@);
 
+    my $workDir   = Foswiki::Func::getWorkArea('DBCacheContrib');
+    File::Path::mkpath("$workDir/$web");
+    my $cacheFile = "$workDir/$web/$cacheName";
+
     my $this = bless(
         {
-            _cache     => undef,        # pointer to the DB, load on demand
-            _web       => $web,
-            _cachename => $cacheName,
-            _standardSchema  => $standardSchema,
+            _cache            => undef, # pointer to the DB, load on demand
+            _web              => $web,
+            _cachename        => $cacheName,
+            _standardSchema   => $standardSchema,
+            _cachePreferences => $cachePreferences || 0,
         },
         $class
     );
 
     # Create the archivist. This will connect to an existing DB or create
     # a new DB if required.
-    my $workDir   = Foswiki::Func::getWorkArea('DBCacheContrib');
-    File::Path::mkpath("$workDir/$web");
-    my $cacheFile = "$workDir/$web/$cacheName";
-
-    $this->{cachePreferences} = $cachePreferences || 0;
 
     $this->{archivist} =
       $Foswiki::cfg{DBCacheContrib}{Archivist}->new($cacheFile);
+
     return $this;
 }
 
@@ -107,7 +101,9 @@ sub cache {
 # In order for this class to operate as documented it has to implement
 # Foswiki::Map. However it no longer directly subclasses Map since the
 # move to BerkeleyDB. So we have to facade the cache instead. Note that
-# this will *not* make this class tieable, as it doesn't inherit.
+# this will *not* make this class tieable, as it doesn't inherit the
+# necessary methods. The following methods are therefore deprecated; they
+# are simply facades on the corresponding Map methods.
 
 sub getKeys {
     my $this = shift;
@@ -162,9 +158,7 @@ sub toString {
 ## End of facade
 ######################################################################
 
-# PRIVATE load a single topic from the given data directory. This
-# ought to be replaced by Foswiki::Func::readTopic -> {$meta, $text) but
-# this implementation is more efficient for just now.
+# PRIVATE load a single topic from the given data directory.
 # returns 1 if the topic was loaded successfully, 0 otherwise
 sub _loadTopic {
     my ( $this, $web, $topic ) = @_;
@@ -300,7 +294,7 @@ sub _loadTopic {
     }
 
     my $prefsCache;
-    if ($this->{cachePreferences}) {
+    if ($this->{_cachePreferences}) {
         # Extract and cache all preference settings from the topic
         $prefsCache = $this->{archivist}->newMap();
         $this->_parsePreferences( $processedText, $prefsCache );
@@ -383,7 +377,7 @@ sub _parsePreferences {
     }
 }
 
-=pod
+=begin TML
 
 ---+++ readTopicLine($topic, $meta, $line, $lines)
    * $topic - name of the topic being read
@@ -397,7 +391,7 @@ The function may modify $lines to cause the caller to skip lines.
 #    my ( $this, $topic, $meta, $line, $data ) = @_;
 #}
 
-=pod
+=begin TML
 
 ---+++ onReload($topics)
    * =$topics= - perl array of topic names that have just been loaded (or reloaded)
@@ -447,7 +441,7 @@ sub _onReload {
     $this->onReload(@_);
 }
 
-=pod
+=begin TML
 
 ---+++ load( [updateCache]  ) -> ($readFromCache, $readFromFile, $removed)
 
@@ -456,8 +450,9 @@ Returns a list containing 3 numbers that give the number of topics
 read from the cache, the number read from file, and the number of previously
 cached topics that have been removed.
 
-if  $Foswiki::cfg{DBCacheContrib}{AlwaysUpdateCache}  is set to FALSE (defaults to TRUE for compatibility)
-then avoid calling _updateCache unless requested. DBCachePlugin now only asked for it from
+if  $Foswiki::cfg{DBCacheContrib}{AlwaysUpdateCache} is set to FALSE
+(defaults to TRUE for compatibility) then avoid calling _updateCache
+unless requested. DBCachePlugin now only asks for it from
 the afterSaveHandler and from the new REST updateCache handler
 
 =cut
@@ -500,7 +495,7 @@ sub load {
         }
     }
 
-#print STDERR "DBCacheContrib: Loaded $readFromCache from cache, $readFromFile from file, $removed removed\n";
+ #print STDERR "DBCacheContrib: Loaded $readFromCache from cache, $readFromFile from file, $removed removed\n";
 
     return ( $readFromCache, $readFromFile, $removed );
 }
@@ -624,7 +619,7 @@ sub _updateCache {
     return @readInfo;
 }
 
-=begin text
+=begin TML
 
 ---+++ =uptodate($topic, $time)= -> boolean
 Check the file time against what is seen on disc. Return 1 if consistent, 0 if inconsistent.
@@ -649,3 +644,25 @@ sub uptodate {
 }
 
 1;
+__END__
+
+Copyright (C) Crawford Currie 2004-2009, http://c-dot.co.uk
+and Foswiki Contributors. Foswiki Contributors are listed in the
+AUTHORS file in the root of this distribution. NOTE: Please extend
+that file, not this notice.
+
+Additional copyrights apply to some or all of the code in this module
+as follows:
+   * Copyright (C) Motorola 2003 - All rights reserved
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version. For
+more details read LICENSE in the root of this distribution.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+As per the GPL, removal of this notice is prohibited.

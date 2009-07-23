@@ -2,9 +2,11 @@
 # Copyright (C) 2007 Crawford Currie, http://c-dot.co.uk
 #
 package Foswiki::Contrib::DBCacheContrib::Archivist::Storable;
-use base 'Foswiki::Contrib::DBCacheContrib::MemArchivist';
-
 use strict;
+
+use Foswiki::Contrib::DBCacheContrib::MemArchivist ();
+our @ISA = ( 'Foswiki::Contrib::DBCacheContrib::MemArchivist' );
+
 use Storable;
 
 sub clear {

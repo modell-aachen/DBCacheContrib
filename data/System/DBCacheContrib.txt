@@ -6,24 +6,13 @@ searches of the content.
 
 %TOC%
 
-<!--
-
-   PLEASE DO NOT EDIT THIS TOPIC
-
-   It is automatically generated from the subversion repository, and any
-   changes you make will simply be overwritten the next time a release is
-   generated.
-
-   Instead, you could check your fix in, raise a bug in the Bugs web, or
-   mail the author.
--->
-
 ---++ Summary of Contents
 
-This module supports fast structured queries over topics in a web. It uses
-a high performance cache of the topic data to deliver much better search
-performance. Different back-end techologies can be used to implement the
-cache, to allow simple tradeoffs between scaling and raw performance.
+This module supports fast structured queries over topics in an
+arbitrarily-sized web. It uses a database to cache topic data to
+deliver much more scaleable search performance. Different back-end
+techologies can be used to implement the cache, to allow simple
+tradeoffs between scaling and raw performance.
 
 Historically this module was designed to be used with a
 companion plugin, such as Foswiki:Extensions.FormQueryPlugin or
@@ -31,12 +20,20 @@ Foswiki:Extensions.DBCachePlugin, which support queries and the display of
 query results. When used this way, the %TOPIC% supports queries made using
 a simple [[%TOPIC%#QueryLanguage][query language]].
 
+The module can also be used in "standard schema mode" to support plugins
+that accelerate core functions, such as the !QueryAcceleratorPlugin.
+
 ---++ Features
    * Perform efficient structured queries on data in forms
 
 ---++ Using the built-in query language
-The query language supported by DBCacheContrib is very similar to the query language used with %SEARCH, which was derived from it. However the underlying schema is somewhat different.
+The query language supported by !DBCacheContrib is very similar to the query language used with %SEARCH, which was derived from it. The contrib can be used in two modes; compatible schema mode (as used by FormQueryPlugin and DBCachePlugin) and standard schema mode (as described in QuerySearch).
 
+In standard schema mode the schema of the DB is as described in QuerySearch.
+In compatible schema mode, the underlying schema is somewhat different, to
+support the extended requirements of the plugins that use it.
+
+---+++ The Compatible Schema
 You can think of the database as an map of all the topics in a web. Each
 entry is itself a map (or hash, in perl terms) that maps a set of field
 names to values.
@@ -120,10 +117,10 @@ can be deleted at any point with no ill effects.
 
 ---++ Detailed Documentation
 Clients use the DBCache by defining a subclass of the
-=Foswiki::Contrib::DBCacheContrib= class. Implementors are stongly recommended to read the POD documentation in the code.
+=Foswiki::Contrib::DBCacheContrib= class. Implementors are stongly recommended to read the POD documentation in the code:
 
 <!--
-	* Set SHORTDESCRIPTION = Reusable code that treats forms as if they were table rows in a database
+	* Set SHORTDESCRIPTION = %$SHORTDESCRIPTION%
 -->
 
 ---++ Installation Instructions

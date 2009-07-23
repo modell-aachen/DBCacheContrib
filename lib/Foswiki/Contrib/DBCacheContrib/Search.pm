@@ -1,15 +1,12 @@
-#
-# Copyright (C) Motorola 2003 - All rights reserved
-# Copyright (C) Crawford Currie 2004
-#
+# See bottom of file for license and copyright information
 
-=begin text
+=begin TML
 
----++ package Foswiki::Contrib::DBCacheContrib::Search
+---+ package Foswiki::Contrib::DBCacheContrib::Search
 
 Search operators work on the fields of a Foswiki::Contrib::DBCacheContrib::Map.
 
----+++ Example
+---++ Example
 Get a list of attachments that have a date earlier than 1st January 2000
 <verbatim>
   $db = new Foswiki::Contrib::DBCacheContrib::DBCache( $web ); # always done
@@ -83,7 +80,7 @@ sub forceTime {
     $now = Time::ParseDate::parsedate($t);
 }
 
-=begin text
+=begin TML
 
 ---+++ =new($string)=
    * =$string= - string containing an expression to parse
@@ -556,7 +553,7 @@ sub workingDays {
     return $whole_weeks * 5 + $extra_days;
 }
 
-=begin text
+=begin TML
 
 ---+++ =toString()= -> string
 Generates a string representation of the object.
@@ -589,7 +586,7 @@ sub toString {
     return $text;
 }
 
-=begin text
+=begin TML
 
 --+++ =addOperator(%oper)
 Add an operator to the parser
@@ -624,3 +621,25 @@ sub addOperator {
 }
 
 1;
+__END__
+
+Copyright (C) Crawford Currie 2004-2009, http://c-dot.co.uk
+and Foswiki Contributors. Foswiki Contributors are listed in the
+AUTHORS file in the root of this distribution. NOTE: Please extend
+that file, not this notice.
+
+Additional copyrights apply to some or all of the code in this module
+as follows:
+   * Copyright (C) Motorola 2003 - All rights reserved
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version. For
+more details read LICENSE in the root of this distribution.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+As per the GPL, removal of this notice is prohibited.
