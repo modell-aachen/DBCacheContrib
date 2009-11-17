@@ -62,11 +62,12 @@ my %operators = (
     'TRUE'               => { exec => \&OP_true,               prec => 0 },
     'd2n'                => { exec => \&OP_d2n,                prec => 5 },
     'length'             => { exec => \&OP_length,             prec => 5 },
+    'defined'            => { exec => \&OP_defined,            prec => 5 },
 );
 
 my $bopRE =
 "AND\\b|OR\\b|!=|=~?|~|<=?|>=?|LATER_THAN\\b|EARLIER_THAN\\b|LATER_THAN_OR_ON\\b|EARLIER_THAN_OR_ON\\b|WITHIN_DAYS\\b|IS_DATE\\b";
-my $uopRE = "!|[lu]c\\b|d2n|length";
+my $uopRE = "!|[lu]c\\b|d2n|length|defined";
 
 my $now = time();
 
@@ -231,77 +232,139 @@ sub OP_number { return $_[0]; }
 
 sub OP_or {
     my ( $r, $l, $map ) = @_;
-    return 0 unless $l;
-    return ( $l->matches($map) || $r->matches($map) );
+
+    return undef unless defined $l;
+
+    my $lval = $l->matches($map);
+    return 1 if $lval;
+
+    return undef unless defined $r;
+
+    my $rval = $r->matches($map);
+    return 1 if $rval;
+
+    return 0;
 }
 
 sub OP_and {
     my ( $r, $l, $map ) = @_;
-    return 0 unless $l;
-    return ( $l->matches($map) && $r->matches($map) ) ? 1 : 0;
+
+    return undef unless defined $l;
+
+    my $lval = $l->matches($map);
+    return 0 unless $lval;
+
+    return undef unless defined $r;
+
+    my $rval = $r->matches($map);
+    return 1 if $rval;
+
+    return 0;
 }
 
 sub OP_not {
     my ( $r, $l, $map ) = @_;
+
+    return undef unless defined $r;
+
     return ( $r->matches($map) ) ? 0 : 1;
 }
 
 sub OP_lc {
     my ( $r, $l, $map ) = @_;
-    return lc( $r->matches($map) );
+
+    return undef unless defined $r;
+
+    my $rval = $r->matches($map);
+    return undef unless defined $rval;
+
+    return lc( $rval );
 }
 
 sub OP_uc {
     my ( $r, $l, $map ) = @_;
-    return uc( $r->matches($map) );
+
+    return undef unless defined $r;
+
+    my $rval = $r->matches($map);
+    return undef unless defined $rval;
+
+    return uc( $rval );
 }
 
 sub OP_i2d {
     my ( $r, $l, $map ) = @_;
-    return 0 unless $r;
-    return Foswiki::Time::formatTime( $r->matches($map), '$email', 'gmtime' );
+
+    return undef unless defined $r;
+
+    my $rval = $r->matches($map);
+    return undef unless defined $rval;
+
+    return Foswiki::Time::formatTime( $rval, '$email', 'gmtime' );
 }
 
 sub OP_d2n {
     my ( $r, $l, $map ) = @_;
-    require Foswiki::Time;
+
+    return undef unless defined $r;
+
     my $rval = $r->matches($map);
-    return Foswiki::Time::parseTime( $rval, 1 ) if $rval;
-    return 0;
+    return undef unless defined $rval;
+
+    require Foswiki::Time;
+    return Foswiki::Time::parseTime( $rval, 1 );
 }
 
 sub OP_length {
     my ( $r, $l, $map ) = @_;
-    $r = $r->matches($map);
-    if ( ref($r) eq 'ARRAY' ) {
-        return scalar(@$r);
+
+    return undef unless defined $r;
+
+    my $rval = $r->matches($map);
+    return undef unless defined $rval;
+
+    if ( ref($rval) eq 'ARRAY' ) {
+        return scalar(@$rval);
     }
-    elsif ( ref($r) eq 'HASH' ) {
-        return scalar( keys %$r );
+    elsif ( ref($rval) eq 'HASH' ) {
+        return scalar( keys %$rval );
     }
-    elsif ( !ref($r) ) {
-        return length($r);
+    else {
+        return length($rval);
     }
+}
+
+sub OP_defined {
+    my ( $r, $l, $map ) = @_;
+
+    return 0 unless defined $r;
+
+    my $rval = $r->matches($map);
+    return 0 unless defined $rval;
+
+    return 1;
 }
 
 sub OP_node {
     my ( $r, $l, $map ) = @_;
 
-    return 0 unless ( $map && defined $r );
+    return undef unless ( $map && defined $r );
 
     # Only reference the hash if the contained form does not
     # define the field
     my $form = $map->get("form");
-    my $val  = $map->get($form)->get($r);
-    unless ($val) {
-        $val = $map->get($r);
-    }
+    my $val;
+    $form = $map->get($form) if $form;
+    $val  = $form->get($r) if $form;
+    $val = $map->get($r) unless defined $val;
+
     return $val;
 }
 
 sub OP_ref {
     my ( $r, $l, $map ) = @_;
-    return 0 unless ( $map && defined $r );
+
+    return undef unless ( $map && defined $r );
 
     # get web db
     my $web = $map->FETCH('_web');
@@ -313,21 +376,21 @@ sub OP_ref {
         $r = $2;
 
         # protect against infinite loops
-        return 0 if $seen{$ref};    # outch
+        return undef if $seen{$ref};    # outch
         $seen{$ref} = 1;
 
         # get form
         my $form = $map->FETCH('form');
-        return 0 unless $form;      # no form
+        return undef unless $form;      # no form
 
         # get refered topic
         $form = $map->FETCH($form);
         $ref  = $form->FETCH($ref);
-        return 0 unless $ref;       # unknown field
+        return undef unless $ref;       # unknown field
 
         # get topic object
         $map = $web->FETCH($ref);
-        return 0 unless $map;       # unknown ref
+        return undef unless $map;       # unknown ref
     }
 
     # the tail is a property of the referenced topic
@@ -341,9 +404,13 @@ sub OP_ref {
 sub OP_equal {
     my ( $r, $l, $map ) = @_;
 
+    return undef unless defined $l && defined $r;
+
     my $lval = $l->matches($map);
     my $rval = $r->matches($map);
-    return 0 unless ( defined $lval && defined $rval );
+
+    return 1 if !defined($lval) && !defined($rval);
+    return 0 if !defined $lval || !defined($rval);
 
     return ( $lval =~ m/^$rval$/ ) ? 1 : 0;
 }
@@ -351,19 +418,29 @@ sub OP_equal {
 sub OP_not_equal {
     my ( $r, $l, $map ) = @_;
 
+    return undef unless defined $l && defined $r;
+
     my $lval = $l->matches($map);
     my $rval = $r->matches($map);
-    return 0 unless ( defined $lval && defined $rval );
+
+    return 0 if !defined($lval) && !defined($rval);
+    return 1 if !defined $lval || !defined($rval);
 
     return ( $lval =~ m/^$rval$/ ) ? 0 : 1;
 }
 
 sub OP_match {
     my ( $r, $l, $map ) = @_;
+    
+    return undef unless defined $l;
 
     my $lval = $l->matches($map);
+    return 0 unless defined $lval;
+
+    return undef unless defined $r;
+
     my $rval = $r->matches($map);
-    return 0 unless ( defined $lval && defined $rval );
+    return 0 unless defined $rval;
 
     return ( $lval =~ m/$rval/ ) ? 1 : 0;
 }
@@ -371,20 +448,31 @@ sub OP_match {
 sub OP_contains {
     my ( $r, $l, $map ) = @_;
 
+    return undef unless defined $l && defined $r;
+
     my $lval = $l->matches($map);
+    return 0 unless defined $lval;
+
     my $rval = $r->matches($map);
-    return 0 unless ( defined $lval && defined $rval );
-    $rval =~ s/\*/.*/g;
+    return undef unless defined $rval;
+
+    $rval =~ s/\./\\./g;
     $rval =~ s/\?/./g;
-    return ( $lval =~ m/^$rval$/ ) ? 1 : 0;
+    $rval =~ s/\*/.*/g;
+
+    return ( $lval =~ m/$rval/ ) ? 1 : 0;
 }
 
 sub OP_greater {
     my ( $r, $l, $map ) = @_;
 
+    return undef unless defined $l && defined $r;
+
     my $lval = $l->matches($map);
+    return undef unless defined $lval;
+
     my $rval = $r->matches($map);
-    return 0 unless ( defined $lval && defined $rval );
+    return undef unless defined $rval;
 
     return ( $lval > $rval ) ? 1 : 0;
 }
@@ -392,9 +480,13 @@ sub OP_greater {
 sub OP_smaller {
     my ( $r, $l, $map ) = @_;
 
+    return undef unless defined $l && defined $r;
+
     my $lval = $l->matches($map);
+    return undef unless defined $lval;
+
     my $rval = $r->matches($map);
-    return 0 unless ( defined $lval && defined $rval );
+    return undef unless defined $rval;
 
     return ( $lval < $rval ) ? 1 : 0;
 }
@@ -402,9 +494,13 @@ sub OP_smaller {
 sub OP_gtequal {
     my ( $r, $l, $map ) = @_;
 
+    return undef unless defined $l && defined $r;
+
     my $lval = $l->matches($map);
+    return undef unless defined $lval;
+
     my $rval = $r->matches($map);
-    return 0 unless ( defined $lval && defined $rval );
+    return undef unless defined $rval;
 
     return ( $lval >= $rval ) ? 1 : 0;
 }
@@ -412,9 +508,13 @@ sub OP_gtequal {
 sub OP_smequal {
     my ( $r, $l, $map ) = @_;
 
+    return undef unless defined $l && defined $r;
+
     my $lval = $l->matches($map);
+    return undef unless defined $lval;
+
     my $rval = $r->matches($map);
-    return 0 unless ( defined $lval && defined $rval );
+    return undef unless defined $rval;
 
     return ( $lval <= $rval ) ? 1 : 0;
 }
@@ -422,96 +522,139 @@ sub OP_smequal {
 sub OP_within_days {
     my ( $r, $l, $map ) = @_;
 
+    return undef unless defined $l && defined $r;
+
     my $lval = $l->matches($map);
+    return undef unless defined $lval;
+
     if ( $lval && $lval !~ /^-?\d+$/ ) {
         require Time::ParseDate;
         $lval = Time::ParseDate::parsedate($lval);
     }
-    return 0 unless ( defined($lval) );
+    return undef unless defined $lval;
+
     my $rval = $r->matches($map);
+    return undef unless defined $rval;
+
     return ( $lval >= $now && workingDays( $now, $lval ) <= $rval ) ? 1 : 0;
 }
 
 sub OP_later_than {
     my ( $r, $l, $map ) = @_;
 
+    return undef unless defined $l && defined $r;
+
     my $lval = $l->matches($map);
+    return undef unless defined $lval;
+
     if ( $lval && $lval !~ /^-?\d+$/ ) {
         require Time::ParseDate;
         $lval = Time::ParseDate::parsedate($lval);
     }
-    return 0 unless ( defined($lval) );
+    return undef unless defined $lval;
+    return undef if $lval !~ /^[+-]?\d+$/;
 
     my $rval = $r->matches($map);
+    return undef unless defined $rval;
+
     if ( $rval && $rval !~ /^-?\d+$/ ) {
         require Time::ParseDate;
         $rval = Time::ParseDate::parsedate($rval);
     }
-    return 0 unless ( defined($lval) );
+    return undef unless defined $rval;
+    return undef if $rval !~ /^[+-]?\d+$/;
+
     return ( $lval > $rval ) ? 1 : 0;
 }
 
 sub OP_later_than_or_on {
     my ( $r, $l, $map ) = @_;
 
+    return undef unless defined $l && defined $r;
+
     my $lval = $l->matches($map);
+    return undef unless defined $lval;
+
     if ( $lval && $lval !~ /^-?\d+$/ ) {
         require Time::ParseDate;
         $lval = Time::ParseDate::parsedate($lval);
     }
-    return 0 unless ( defined($lval) );
+    return undef unless defined $lval;
+    return undef if $lval !~ /^[+-]?\d+$/;
 
     my $rval = $r->matches($map);
+    return undef unless defined $rval;
     if ( $rval && $rval !~ /^-?\d+$/ ) {
         require Time::ParseDate;
         $rval = Time::ParseDate::parsedate($rval);
     }
-    return 0 unless ( defined($lval) );
+    return undef unless defined $rval;
+    return undef if $rval !~ /^[+-]?\d+$/;
+
     return ( $lval >= $rval ) ? 1 : 0;
 }
 
 sub OP_earlier_than {
     my ( $r, $l, $map ) = @_;
 
+    return undef unless defined $l && defined $r;
+
     my $lval = $l->matches($map);
+    return undef unless defined $lval;
+
     if ( $lval && $lval !~ /^-?\d+$/ ) {
         require Time::ParseDate;
         $lval = Time::ParseDate::parsedate($lval);
     }
-    return 0 unless ( defined($lval) );
+    return undef unless defined $lval;
+    return undef if $lval !~ /^[+-]?\d+$/;
 
     my $rval = $r->matches($map);
+    return undef unless defined $rval;
     if ( $rval && $rval !~ /^-?\d+$/ ) {
         require Time::ParseDate;
         $rval = Time::ParseDate::parsedate($rval);
     }
-    return 0 unless ( defined($lval) );
+    return undef unless defined $rval;
+    return undef if $rval !~ /^[+-]?\d+$/;
+
     return ( $lval < $rval ) ? 1 : 0;
 }
 
 sub OP_earlier_than_or_on {
     my ( $r, $l, $map ) = @_;
 
+    return undef unless defined $l && defined $r;
+
     my $lval = $l->matches($map);
+    return undef unless defined $lval;
+
     if ( $lval && $lval !~ /^-?\d+$/ ) {
         require Time::ParseDate;
         $lval = Time::ParseDate::parsedate($lval);
     }
-    return 0 unless ( defined($lval) );
+    return undef unless defined $lval;
+    return undef if $lval !~ /^[+-]?\d+$/;
 
     my $rval = $r->matches($map);
+    return undef unless defined $rval;
     if ( $rval && $rval !~ /^-?\d+$/ ) {
         require Time::ParseDate;
         $rval = Time::ParseDate::parsedate($rval);
     }
-    return 0 unless ( defined($lval) );
+    return undef unless defined $rval;
+    return undef if $rval !~ /^[+-]?\d+$/;
+
     return ( $lval <= $rval ) ? 1 : 0;
 }
 
 sub OP_is_date {
     my ( $r, $l, $map ) = @_;
 
+    return undef unless defined $l && $r;
+
     my $lval = $l->matches($map);
+    return undef unless defined $lval;
     if ( $lval && $lval !~ /^-?\d+$/ ) {
         require Time::ParseDate;
         $lval = Time::ParseDate::parsedate($lval);
@@ -519,11 +662,13 @@ sub OP_is_date {
     return 0 unless ( defined($lval) );
 
     my $rval = $r->matches($map);
+    return undef unless defined $rval;
     if ( $rval && $rval !~ /^-?\d+$/ ) {
         require Time::ParseDate;
         $rval = Time::ParseDate::parsedate($rval);
     }
-    return 0 unless ( defined($lval) );
+    return undef unless defined $rval;
+
     return ( $lval == $rval ) ? 1 : 0;
 }
 

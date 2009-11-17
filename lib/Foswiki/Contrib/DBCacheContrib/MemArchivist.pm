@@ -15,8 +15,12 @@ use Foswiki::Contrib::DBCacheContrib::MemMap ();
 use Foswiki::Contrib::DBCacheContrib::MemArray ();
 
 sub new {
-    my ( $class, $file ) = @_;
-    my $this = bless( { _file => $file }, $class );
+    my ( $class, $cacheName ) = @_;
+
+    my $workDir   = Foswiki::Func::getWorkArea('DBCacheContrib');
+    $cacheName =~ s/\//\./go;
+
+    my $this = bless( { _file => $workDir.'/'.$cacheName }, $class );
     return $this;
 }
 

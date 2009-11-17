@@ -6,7 +6,6 @@ use strict;
 use Assert;
 
 use Foswiki::Attrs ();
-use File::Path ();
 
 =begin TML
 
@@ -34,7 +33,10 @@ Typical usage:
      }
   }
 </verbatim>
-As topics are loaded, the readTopicLine method gives subclasses an opportunity to apply special processing to indivual lines, for example to extract special syntax such as %ACTION lines, or embedded tables in the text. See FormQueryPlugin for an example of this.
+As topics are loaded, the readTopicLine method gives subclasses an opportunity
+to apply special processing to indivual lines, for example to extract special
+syntax such as %ACTION lines, or embedded tables in the text. See
+FormQueryPlugin for an example of this.
 
 =cut
 
@@ -69,9 +71,6 @@ sub new {
     die $@ if ($@);
 
     my $workDir   = Foswiki::Func::getWorkArea('DBCacheContrib');
-    File::Path::mkpath("$workDir/$web");
-    my $cacheFile = "$workDir/$web/$cacheName";
-
     my $this = bless(
         {
             _cache            => undef, # pointer to the DB, load on demand
@@ -87,7 +86,7 @@ sub new {
     # a new DB if required.
 
     $this->{archivist} =
-      $Foswiki::cfg{DBCacheContrib}{Archivist}->new($cacheFile);
+      $Foswiki::cfg{DBCacheContrib}{Archivist}->new($web.'.'.$cacheName);
 
     return $this;
 }
@@ -410,6 +409,7 @@ sub _onReload {
 
     unless ($this->{_standardSchema}) {
         foreach my $topic ( $this->{_cache}->getValues() ) {
+            next unless $topic; # SMELL: why does that sometimes happen?
 
             # Fill in parent relations
             unless ( $topic->FETCH('parent') ) {
@@ -489,7 +489,7 @@ sub load {
             ASSERT( 0, $@ ) if DEBUG;
             print STDERR "Cache read failed $@...\n" if DEBUG;
             Foswiki::Func::writeWarning("DBCache: Cache read failed: $@");
-            $this->{_cache} = undef;
+            # $this->{_cache} = undef; # SMELL: don't nuke the cache although this object still exists
         } elsif ( $readFromFile || $removed ) {
             $this->{archivist}->sync( $this->{_cache} );
         }
@@ -513,15 +513,14 @@ sub loadTopic {
         ASSERT( 0, $@ ) if DEBUG;
         print STDERR "Cache read failed $@...\n" if DEBUG;
         Foswiki::Func::writeWarning("DBCache: Cache read failed: $@");
-        $this->{_cache} = undef;
+        # $this->{_cache} = undef; # SMELL: don't nuke the cache although this object still exists
         $found = 0;
-    } else {
-        $this->{archivist}->sync( $this->{_cache} );
     }
 
     if ( $found ) {
         # refresh relations
         $this->_onReload( [$topic] );
+        $this->{archivist}->sync( $this->{_cache} );
     }
 }
 
@@ -550,8 +549,14 @@ sub _updateTopic {
 
         #print STDERR "$web.$topic is not in the cache\n";
         # Not in cache
-        $topcache = $this->_loadTopic( $web, $topic );
-        $this->{_cache}->set( $topic, $topcache );
+	my $exists = Foswiki::Func::topicExists($web,$topic);
+	if ($exists) {
+	  $topcache = $this->_loadTopic( $web, $topic );
+	  $this->{_cache}->set( $topic, $topcache );
+	} else {
+            $$readInfo[2]++ if $readInfo;
+            $found = 1;
+	}
         if ($topcache) {
             $$readInfo[1]++ if $readInfo;
             $found = 1;
@@ -575,6 +580,7 @@ sub _updateCache {
 
     $readInfo[0] = $this->{_cache}->size();
     foreach my $cached ( $this->{_cache}->getValues() ) {
+        next unless $cached; # SMELL: why does that happen sometimes
         $cached->set( '.fresh', 0 );
     }
 
@@ -600,6 +606,7 @@ sub _updateCache {
 
     # Find smelly topics in the cache
     foreach my $cached ( $this->{_cache}->getValues() ) {
+        next unless $cached; # SMELL: why does that happen sometimes
         if ( $cached->FETCH('.fresh') ) {
             $cached->remove('.fresh');
         }

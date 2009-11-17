@@ -40,7 +40,12 @@ sub _MAP    { 1 };
 sub _ARRAY  { 2 };
 
 sub new {
-    my ( $class, $file ) = @_;
+    my ( $class, $cacheName ) = @_;
+
+    my $workDir   = Foswiki::Func::getWorkArea('DBCacheContrib');
+    $cacheName =~ s/\//\./go;
+    my $file = $workDir.'/'.$cacheName;
+
     my $this = bless( {}, $class );
     $this->{db} = new BerkeleyDB::Hash(
         -Flags    => BerkeleyDB::DB_CREATE(),
