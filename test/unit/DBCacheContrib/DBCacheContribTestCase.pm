@@ -1,5 +1,6 @@
 package DBCacheContribTestCase;
-use base 'FoswikiFnTestCase';
+use FoswikiFnTestCase;
+our @ISA = qw( FoswikiFnTestCase );
 
 use strict;
 use Assert;

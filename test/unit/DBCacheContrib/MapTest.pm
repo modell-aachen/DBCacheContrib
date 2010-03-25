@@ -1,5 +1,6 @@
 package MapTest;
-use base 'DBCacheContribTestCase';
+use DBCacheContribTestCase;
+our @ISA = qw( DBCacheContribTestCase );
 
 use strict;
 use Foswiki::Contrib::DBCacheContrib::Search;

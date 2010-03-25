@@ -1,5 +1,6 @@
 package DBCacheTest;
-use base 'DBCacheContribTestCase';
+use DBCacheContribTestCase;
+our @ISA = qw( DBCacheContribTestCase );
 
 use strict;
 

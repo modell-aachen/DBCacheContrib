@@ -1,5 +1,6 @@
 package SearchTest;
-use base 'DBCacheContribTestCase';
+use DBCacheContribTestCase;
+our @ISA = qw( DBCacheContribTestCase );
 
 use Foswiki::Contrib::DBCacheContrib::Search;
 use Foswiki::Time;
