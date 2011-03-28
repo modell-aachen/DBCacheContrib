@@ -41,7 +41,7 @@ FormQueryPlugin for an example of this.
 =cut
 
 our $VERSION = '$Rev$';
-our $RELEASE = '17 Nov 2009';
+our $RELEASE = '28 Mar 2011';
 our $SHORTDESCRIPTION = 'Reusable code that treats forms as if they were table rows in a database';
 
 =begin TML
@@ -449,11 +449,6 @@ Load the web into the database.
 Returns a list containing 3 numbers that give the number of topics
 read from the cache, the number read from file, and the number of previously
 cached topics that have been removed.
-
-if  $Foswiki::cfg{DBCacheContrib}{AlwaysUpdateCache} is set to FALSE
-(defaults to TRUE for compatibility) then avoid calling _updateCache
-unless requested. DBCachePlugin now only asks for it from
-the afterSaveHandler and from the new REST updateCache handler
 
 =cut
 

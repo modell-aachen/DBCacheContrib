@@ -133,7 +133,8 @@ Clients use the DBCache by defining a subclass of the
 |  Release: | %$RELEASE% |
 |  Version: | %$VERSION% |
 |  Change History: | |
-|  17 Nov 2009 | Foswikitask:Item8327: series of robustness fixes (MD) |
+|  28 Mar 2011 | Foswikitask:Item9375: disabling {AlwaysUpdateCache} by default and making an expert option with appropriate warnings |
+|  17 Nov 2009 | Foswikitask:Item8327: series of robustness fixes (Foswiki:Main.MichaelDaum) |
 |  30 Jun 2009 | Foswikitask:Item8153: make dirs for path to cache; Foswikitask:Item8194: incoporated patch from Foswiki:Main.MichaelDaum Foswikitask:Item8195: extract and cache permissions settings |
 |  18 Jun 2009 | Foswikitask:Item8183: fixed problem with Scalar::Util::weaken that was causing !DBCachePlugin problems |
 |  6 Jun 2009 | Foswikitask:Item1691: changes to support Foswiki:Extensions.QueryAcceleratorPlugin |
@@ -145,7 +146,7 @@ Clients use the DBCache by defining a subclass of the
            the normal grep-based SEARCH does. Foswiki:Main.MichaelDaum |
 |  15868 | fixed WITHIN_DAYS and EARLIER_THAN. Foswiki:Main.MichaelDaum |
 |  15583 | made query parser pluggable so that other plugins can implement their own predicates. Foswiki:Main.MichaelDaum |
-|  15019 | added {DBCache}{AlwaysUpdateCache} to remove the updateCache from every operation. Foswiki:Main.SvenDowideit |
+|  15019 | added {DBCacheContrib}{AlwaysUpdateCache} to remove the updateCache from every operation. Foswiki:Main.SvenDowideit |
 |  13562 | Bugs:Item3985 - fixed failures with hierarchical webs |
 |  13527 | Moved the cache into the extensions work areas, instead of the web directory |
 |  12943 | Bugs:Item3659: added automatic conversion of integers to dates |
