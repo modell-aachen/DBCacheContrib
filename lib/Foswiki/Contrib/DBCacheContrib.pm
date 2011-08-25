@@ -203,7 +203,8 @@ sub _loadTopic {
 
     if ($hash = $tom->get('FORM')) {
         my ( $formWeb, $formTopic ) =
-          Foswiki::Func::normalizeWebTopicName( '', $hash->{name} );
+          Foswiki::Func::normalizeWebTopicName( $web, $hash->{name} );
+        $formWeb =~ s/\//./g; # normalize the normalization
         $form = $this->{archivist}->newMap();
         if ($standardSchema) {
             $form->set( 'name', "$formWeb.$formTopic" );
