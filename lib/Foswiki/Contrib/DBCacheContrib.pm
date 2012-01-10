@@ -91,6 +91,11 @@ sub new {
     return $this;
 }
 
+sub getArchivist {
+    my $this = shift;
+    return $this->{archivist};
+}
+
 sub cache {
     my $this = shift;
     return $this->{_cache};
@@ -499,6 +504,7 @@ sub load {
 sub loadTopic {
     my ( $this, $web, $topic ) = @_;
 
+    #print STDERR "loadTopic($web, $topic)\n";
     my $found = 0;
 
     eval { 
