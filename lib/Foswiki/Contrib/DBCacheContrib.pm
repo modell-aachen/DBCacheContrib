@@ -41,7 +41,7 @@ FormQueryPlugin for an example of this.
 =cut
 
 our $VERSION = '$Rev$';
-our $RELEASE = '25 Aug 2011';
+our $RELEASE = '10 Jan 2012';
 our $SHORTDESCRIPTION = 'Reusable code that treats forms as if they were table rows in a database';
 
 =begin TML
