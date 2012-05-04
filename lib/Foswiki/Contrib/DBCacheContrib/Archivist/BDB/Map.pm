@@ -11,10 +11,13 @@ package Foswiki::Contrib::DBCacheContrib::Archivist::BDB::Map;
 use strict;
 
 use Foswiki::Contrib::DBCacheContrib::Map ();
+
 # Mixin collections code
 use Foswiki::Contrib::DBCacheContrib::Archivist::BDB::Collection ();
-our @ISA = ( 'Foswiki::Contrib::DBCacheContrib::Map',
-         'Foswiki::Contrib::DBCacheContrib::Archivist::BDB::Collection' );
+our @ISA = (
+    'Foswiki::Contrib::DBCacheContrib::Map',
+    'Foswiki::Contrib::DBCacheContrib::Archivist::BDB::Collection'
+);
 
 use Assert;
 
@@ -23,7 +26,7 @@ sub new {
     my $class = shift;
     my %args  = @_;
     my $initial;
-    if ( $args{initial}) {
+    if ( $args{initial} ) {
 
         # Delay parsing until we are bound
         $initial = $args{initial};
@@ -41,11 +44,12 @@ sub new {
         $this->{id} = $this->{archivist}->allocateID();
     }
     if ($initial) {
-        if (ref($initial)) {
-            while (my ($k, $v) = each %$initial) {
-                $this->STORE($k, $v);
+        if ( ref($initial) ) {
+            while ( my ( $k, $v ) = each %$initial ) {
+                $this->STORE( $k, $v );
             }
-        } else {
+        }
+        else {
             $this->parse($initial);
         }
     }
@@ -58,23 +62,23 @@ sub STORE {
     my %keys = map { $_ => 1 } $this->getKeys();
     unless ( $keys{$key} ) {
         push( @{ $this->{keys} }, $key );
-        $this->{archivist}->db_set(
-            'K'.$this->{id}, join( "\0", @{ $this->{keys} } ));
+        $this->{archivist}
+          ->db_set( 'K' . $this->{id}, join( "\0", @{ $this->{keys} } ) );
     }
-    $this->{archivist}->db_set($id, $this->{archivist}->encode($value));
+    $this->{archivist}->db_set( $id, $this->{archivist}->encode($value) );
 }
 
 sub FIRSTKEY {
     my $this = shift;
     $this->getKeys();
     $this->{keyIt} = 0;
-    return $this->{keys}->[$this->{keyIt}++];
+    return $this->{keys}->[ $this->{keyIt}++ ];
 }
 
 sub NEXTKEY {
     my ( $this, $lastkey ) = @_;
-    return unless $this->{keyIt} < scalar(@{$this->{keys}});
-    return $this->{keys}->[$this->{keyIt}++];
+    return unless $this->{keyIt} < scalar( @{ $this->{keys} } );
+    return $this->{keys}->[ $this->{keyIt}++ ];
 }
 
 sub EXISTS {
@@ -88,7 +92,7 @@ sub DELETE {
     $this->getKeys();
     my %keys = map { $_ => 1 } $this->getKeys();
     delete( $keys{$key} );
-    $this->{archivist}->db_set('K'.$this->{id}, join( "\0", keys %keys ));
+    $this->{archivist}->db_set( 'K' . $this->{id}, join( "\0", keys %keys ) );
     $this->{keys} = undef;
 }
 
@@ -109,7 +113,7 @@ sub getKeys {
 
     unless ( defined $this->{keys} ) {
         @{ $this->{keys} } =
-          split( "\0", $this->{archivist}->db_get('K'.$this->{id}) || '' );
+          split( "\0", $this->{archivist}->db_get( 'K' . $this->{id} ) || '' );
     }
 
     return @{ $this->{keys} };

@@ -42,7 +42,8 @@ FormQueryPlugin for an example of this.
 
 our $VERSION = '$Rev$';
 our $RELEASE = '10 Jan 2012';
-our $SHORTDESCRIPTION = 'Reusable code that treats forms as if they were table rows in a database';
+our $SHORTDESCRIPTION =
+  'Reusable code that treats forms as if they were table rows in a database';
 
 =begin TML
 
@@ -60,7 +61,7 @@ Construct a new DBCache object.
 
 sub new {
     my ( $class, $web, $cacheName, $standardSchema, $cachePreferences ) = @_;
-    $cacheName ||= '_DBCache' . ($standardSchema ? '_standard' : '');
+    $cacheName ||= '_DBCache' . ( $standardSchema ? '_standard' : '' );
 
     # Backward compatibility
     unless ( $Foswiki::cfg{DBCacheContrib}{Archivist} ) {
@@ -70,12 +71,12 @@ sub new {
     eval "use $Foswiki::cfg{DBCacheContrib}{Archivist}";
     die $@ if ($@);
 
-    my $workDir   = Foswiki::Func::getWorkArea('DBCacheContrib');
-    my $this = bless(
+    my $workDir = Foswiki::Func::getWorkArea('DBCacheContrib');
+    my $this    = bless(
         {
-            _cache            => undef, # pointer to the DB, load on demand
-            _web              => $web,
-            _cachename        => $cacheName,
+            _cache     => undef,        # pointer to the DB, load on demand
+            _web       => $web,
+            _cachename => $cacheName,
             _standardSchema   => $standardSchema,
             _cachePreferences => $cachePreferences || 0,
         },
@@ -86,7 +87,7 @@ sub new {
     # a new DB if required.
 
     $this->{archivist} =
-      $Foswiki::cfg{DBCacheContrib}{Archivist}->new($web.'.'.$cacheName);
+      $Foswiki::cfg{DBCacheContrib}{Archivist}->new( $web . '.' . $cacheName );
 
     return $this;
 }
@@ -167,24 +168,29 @@ sub toString {
 sub _loadTopic {
     my ( $this, $web, $topic ) = @_;
 
-    my ($tom, $text) = Foswiki::Func::readTopic( $web, $topic );
+    my ( $tom, $text ) = Foswiki::Func::readTopic( $web, $topic );
     my $standardSchema = $this->{_standardSchema};
 
     my $meta = $this->{archivist}->newMap();
-    $meta->set( 'name',  $topic );
+    $meta->set( 'name', $topic );
     if ($standardSchema) {
         $meta->set( 'web', $web );
-    } else {
+    }
+    else {
         $meta->set( 'topic', $topic );
     }
+
     # SMELL: core API
     my $time;
-    if ($Foswiki::Plugins::SESSION->can('getApproxRevTime')) {
-        $time = $Foswiki::Plugins::SESSION->getApproxRevTime($web, $topic);
-    } else {
+    if ( $Foswiki::Plugins::SESSION->can('getApproxRevTime') ) {
+        $time = $Foswiki::Plugins::SESSION->getApproxRevTime( $web, $topic );
+    }
+    else {
+
         # This is here for TWiki
-        $time = $Foswiki::Plugins::SESSION->{store}->
-          getTopicLatestRevTime($web, $topic);
+        $time =
+          $Foswiki::Plugins::SESSION->{store}
+          ->getTopicLatestRevTime( $web, $topic );
     }
     $meta->set( '.cache_path', "$web.$topic" );
     $meta->set( '.cache_time', $time );
@@ -192,11 +198,13 @@ sub _loadTopic {
     my $lookup;
     my $atts;
     if ($standardSchema) {
+
         # Add a fast lookup table for fields. This must be present
         # for QueryAcceleratorPlugin
         $lookup = $this->{archivist}->newMap();
-        $meta->set( '.fields', $lookup );
+        $meta->set( '.fields',    $lookup );
         $meta->set( '.form_name', '' );
+
         # Create an empty array for the attachments. We have to have this
         # due to a deficiency in the 1.0.5 query algorithm
         $atts = $this->{archivist}->newArray();
@@ -206,16 +214,17 @@ sub _loadTopic {
     my $form;
     my $hash;
 
-    if ($hash = $tom->get('FORM')) {
+    if ( $hash = $tom->get('FORM') ) {
         my ( $formWeb, $formTopic ) =
           Foswiki::Func::normalizeWebTopicName( $web, $hash->{name} );
-        $formWeb =~ s/\//./g; # normalize the normalization
+        $formWeb =~ s/\//./g;    # normalize the normalization
         $form = $this->{archivist}->newMap();
         if ($standardSchema) {
-            $form->set( 'name', "$formWeb.$formTopic" );
-            $meta->set( 'META:FORM', $form );
+            $form->set( 'name',       "$formWeb.$formTopic" );
+            $meta->set( 'META:FORM',  $form );
             $meta->set( '.form_name', "$formWeb.$formTopic" );
-        } else {
+        }
+        else {
             $form->set( 'name', "$formWeb.$formTopic" );
             $form->set( '_up',  $meta );
             $form->set( '_web', $this->{_cache} );
@@ -227,7 +236,8 @@ sub _loadTopic {
         if ($standardSchema) {
             my $parent = $this->{archivist}->newMap( initial => $hash );
             $meta->set( 'META:TOPICPARENT', $parent );
-        } else {
+        }
+        else {
             $meta->set( 'parent', $hash->{name} );
         }
     }
@@ -235,24 +245,26 @@ sub _loadTopic {
         my $att = $this->{archivist}->newMap( initial => $hash );
         if ($standardSchema) {
             $meta->set( 'META:TOPICINFO', $att );
-        } else {
+        }
+        else {
             $att->set( '_up',  $meta );
             $att->set( '_web', $this->{_cache} );
             $meta->set( 'info', $att );
         }
     }
-    if ( $hash = $tom->get('TOPICMOVED')) {
+    if ( $hash = $tom->get('TOPICMOVED') ) {
         my $att = $this->{archivist}->newMap( initial => $hash );
         if ($standardSchema) {
             $meta->set( 'META:TOPICMOVED', $att );
-        } else {
+        }
+        else {
             $att->set( '_up',  $meta );
             $att->set( '_web', $this->{_cache} );
             $meta->set( 'moved', $att );
         }
     }
     my @fields = $tom->find('FIELD');
-    if ( scalar(@fields)) {
+    if ( scalar(@fields) ) {
         my $fields;
         if ($standardSchema) {
             $fields = $this->{archivist}->newArray();
@@ -261,21 +273,22 @@ sub _loadTopic {
         foreach my $field (@fields) {
             if ($standardSchema) {
                 my $att = $this->{archivist}->newMap( initial => $field );
-                $fields->add( $att );
+                $fields->add($att);
                 $lookup->set( $field->{name}, $att );
-            } else {
+            }
+            else {
                 unless ($form) {
-                    $form = $this->{archivist}->newMap() ;
+                    $form = $this->{archivist}->newMap();
                     $form->set( '_web', $this->{_cache} );
                 }
                 $form->set( $field->{name}, $field->{value} );
             }
         }
     }
-    my @attachments =  $tom->find('FILEATTACHMENT');
+    my @attachments = $tom->find('FILEATTACHMENT');
     foreach my $attachment (@attachments) {
         my $att = $this->{archivist}->newMap( initial => $attachment );
-        if (!$standardSchema) {
+        if ( !$standardSchema ) {
             $att->set( '_up',  $meta );
             $att->set( '_web', $this->{_cache} );
             $atts = $meta->get('attachments');
@@ -289,17 +302,19 @@ sub _loadTopic {
 
     my $processedText = '';
     if ( $this->can('readTopicLine') ) {
-        my @lines = split(/\r?\n/, $text);
-        while (scalar(@lines)) {
+        my @lines = split( /\r?\n/, $text );
+        while ( scalar(@lines) ) {
             my $line = shift(@lines);
             $text .= $this->readTopicLine( $topic, $meta, $line, \@lines );
         }
-    } else {
+    }
+    else {
         $processedText = $text;
     }
 
     my $prefsCache;
-    if ($this->{_cachePreferences}) {
+    if ( $this->{_cachePreferences} ) {
+
         # Extract and cache all preference settings from the topic
         $prefsCache = $this->{archivist}->newMap();
         $this->_parsePreferences( $processedText, $prefsCache );
@@ -314,7 +329,8 @@ sub _loadTopic {
                 $prefs = $this->{archivist}->newArray();
                 $meta->set( 'META:PREFERENCE', $prefs );
             }
-        } else {
+        }
+        else {
             $pref->set( '_up',  $meta );
             $pref->set( '_web', $this->{_cache} );
             $prefs = $meta->get('preferences');
@@ -325,10 +341,10 @@ sub _loadTopic {
         }
         $prefs->add($pref);
         if ($prefsCache) {
-            $this->_addSetting( $prefsCache,
-                                $preference->{type},
-                                $preference->{name},
-                                $preference->{value} );
+            $this->_addSetting(
+                $prefsCache,         $preference->{type},
+                $preference->{name}, $preference->{value}
+            );
         }
     }
 
@@ -336,30 +352,30 @@ sub _loadTopic {
         $meta->set( '_sets', $prefsCache );
     }
     $meta->set( 'text', $processedText );
-    $meta->set( 'all',  $tom->getEmbeddedStoreForm() ) unless $standardSchema;
+    $meta->set( 'all', $tom->getEmbeddedStoreForm() ) unless $standardSchema;
 
     return $meta;
 }
 
 sub _addSetting {
-    my ($this, $map, $type, $key, $value) = @_;
+    my ( $this, $map, $type, $key, $value ) = @_;
     my $submap = $map->fastget($type);
     unless ($submap) {
         $submap = $this->{archivist}->newMap();
-        $map->set($type, $submap);
+        $map->set( $type, $submap );
     }
     $submap->set( $key, $value );
 }
 
 # Parse preference settings out of topic text
 sub _parsePreferences {
-    my ($this, $text, $map) = @_;
-    my ($key, $value, $type ) = ( '', '' );
+    my ( $this, $text, $map ) = @_;
+    my ( $key, $value, $type ) = ( '', '' );
 
     foreach ( split( "\n", $text ) ) {
         if (m/$Foswiki::regex{setVarRegex}/os) {
             if ( defined $type ) {
-                $this->_addSetting($map, $type, $key, $value);
+                $this->_addSetting( $map, $type, $key, $value );
             }
             $type  = $1;
             $key   = $2;
@@ -372,13 +388,13 @@ sub _parsePreferences {
                 $value .= "\n" . $_;
             }
             else {
-                $this->_addSetting($map, $type, $key, $value);
+                $this->_addSetting( $map, $type, $key, $value );
                 undef $type;
             }
         }
     }
-    if (defined $type) {
-        $this->_addSetting($map, $type, $key, $value);
+    if ( defined $type ) {
+        $this->_addSetting( $map, $type, $key, $value );
     }
 }
 
@@ -413,9 +429,9 @@ sub onReload {
 sub _onReload {
     my $this = shift;
 
-    unless ($this->{_standardSchema}) {
+    unless ( $this->{_standardSchema} ) {
         foreach my $topic ( $this->{_cache}->getValues() ) {
-            next unless $topic; # SMELL: why does that sometimes happen?
+            next unless $topic;    # SMELL: why does that sometimes happen?
 
             # Fill in parent relations
             unless ( $topic->FETCH('parent') ) {
@@ -490,13 +506,15 @@ sub load {
             ASSERT( 0, $@ ) if DEBUG;
             print STDERR "Cache read failed $@...\n" if DEBUG;
             Foswiki::Func::writeWarning("DBCache: Cache read failed: $@");
-            # $this->{_cache} = undef; # SMELL: don't nuke the cache although this object still exists
-        } elsif ( $readFromFile || $removed ) {
+
+# $this->{_cache} = undef; # SMELL: don't nuke the cache although this object still exists
+        }
+        elsif ( $readFromFile || $removed ) {
             $this->{archivist}->sync( $this->{_cache} );
         }
     }
 
- #print STDERR "DBCacheContrib: Loaded $readFromCache from cache, $readFromFile from file, $removed removed\n";
+#print STDERR "DBCacheContrib: Loaded $readFromCache from cache, $readFromFile from file, $removed removed\n";
 
     return ( $readFromCache, $readFromFile, $removed );
 }
@@ -507,19 +525,19 @@ sub loadTopic {
     #print STDERR "loadTopic($web, $topic)\n";
     my $found = 0;
 
-    eval { 
-      $found = $this->_updateTopic($web, $topic); 
-    };
+    eval { $found = $this->_updateTopic( $web, $topic ); };
 
     if ($@) {
         ASSERT( 0, $@ ) if DEBUG;
         print STDERR "Cache read failed $@...\n" if DEBUG;
         Foswiki::Func::writeWarning("DBCache: Cache read failed: $@");
-        # $this->{_cache} = undef; # SMELL: don't nuke the cache although this object still exists
+
+# $this->{_cache} = undef; # SMELL: don't nuke the cache although this object still exists
         $found = 0;
     }
 
-    if ( $found ) {
+    if ($found) {
+
         # refresh relations
         $this->_onReload( [$topic] );
         $this->{archivist}->sync( $this->{_cache} );
@@ -542,6 +560,7 @@ sub _updateTopic {
         )
       )
     {
+
         #print STDERR "$web.$topic is out of date\n";
         $this->{_cache}->remove($topic);
         $$readInfo[0]-- if $readInfo;
@@ -551,14 +570,15 @@ sub _updateTopic {
 
         #print STDERR "$web.$topic is not in the cache\n";
         # Not in cache
-	my $exists = Foswiki::Func::topicExists($web,$topic);
-	if ($exists) {
-	  $topcache = $this->_loadTopic( $web, $topic );
-	  $this->{_cache}->set( $topic, $topcache );
-	} else {
+        my $exists = Foswiki::Func::topicExists( $web, $topic );
+        if ($exists) {
+            $topcache = $this->_loadTopic( $web, $topic );
+            $this->{_cache}->set( $topic, $topcache );
+        }
+        else {
             $$readInfo[2]++ if $readInfo;
             $found = 1;
-	}
+        }
         if ($topcache) {
             $$readInfo[1]++ if $readInfo;
             $found = 1;
@@ -575,14 +595,14 @@ sub _updateCache {
     my ( $this, $web ) = @_;
 
     my @readInfo = (
-      0, # read from cache
-      0, # read from file
-      0, # removed
+        0,    # read from cache
+        0,    # read from file
+        0,    # removed
     );
 
     $readInfo[0] = $this->{_cache}->size();
     foreach my $cached ( $this->{_cache}->getValues() ) {
-        next unless $cached; # SMELL: why does that happen sometimes
+        next unless $cached;    # SMELL: why does that happen sometimes
         $cached->set( '.fresh', 0 );
     }
 
@@ -594,7 +614,7 @@ sub _updateCache {
 
     # load topics that are missing from the cache
     foreach my $topic ( Foswiki::Func::getTopicList($web) ) {
-        if ($this->_updateTopic($web, $topic, \@readInfo)) {
+        if ( $this->_updateTopic( $web, $topic, \@readInfo ) ) {
             push( @readTopic, $topic );
         }
 
@@ -602,13 +622,13 @@ sub _updateCache {
         last
           if defined( $Foswiki::cfg{DBCacheContrib}{LoadFileLimit} )
               && ( $Foswiki::cfg{DBCacheContrib}{LoadFileLimit} > 0 )
-              && ( $readInfo[1] >
-                  $Foswiki::cfg{DBCacheContrib}{LoadFileLimit} );
+              && (
+                  $readInfo[1] > $Foswiki::cfg{DBCacheContrib}{LoadFileLimit} );
     }
 
     # Find smelly topics in the cache
     foreach my $cached ( $this->{_cache}->getValues() ) {
-        next unless $cached; # SMELL: why does that happen sometimes
+        next unless $cached;    # SMELL: why does that happen sometimes
         if ( $cached->FETCH('.fresh') ) {
             $cached->remove('.fresh');
         }
@@ -637,17 +657,22 @@ Check the file time against what is seen on disc. Return 1 if consistent, 0 if i
 
 sub uptodate {
     my ( $path, $time ) = @_;
-    my ($web, $topic) = split(/\./, $path, 2);
-    ASSERT($web, $path) if DEBUG;
-    ASSERT($topic, $path) if DEBUG;
+    my ( $web, $topic ) = split( /\./, $path, 2 );
+    ASSERT( $web,   $path ) if DEBUG;
+    ASSERT( $topic, $path ) if DEBUG;
+
     # SMELL: core API
     my $fileTime;
-    if ($Foswiki::Plugins::SESSION->can('getApproxRevTime')) {
-        $fileTime = $Foswiki::Plugins::SESSION->getApproxRevTime($web, $topic);
-    } else {
+    if ( $Foswiki::Plugins::SESSION->can('getApproxRevTime') ) {
+        $fileTime =
+          $Foswiki::Plugins::SESSION->getApproxRevTime( $web, $topic );
+    }
+    else {
+
         # This is here for TWiki
-        $fileTime = $Foswiki::Plugins::SESSION->{store}->
-          getTopicLatestRevTime($web, $topic);
+        $fileTime =
+          $Foswiki::Plugins::SESSION->{store}
+          ->getTopicLatestRevTime( $web, $topic );
     }
     return ( $fileTime == $time ) ? 1 : 0;
 }

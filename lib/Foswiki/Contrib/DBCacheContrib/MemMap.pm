@@ -2,7 +2,7 @@
 package Foswiki::Contrib::DBCacheContrib::MemMap;
 use strict;
 use Foswiki::Contrib::DBCacheContrib::Map ();
-our @ISA = ( 'Foswiki::Contrib::DBCacheContrib::Map' );
+our @ISA = ('Foswiki::Contrib::DBCacheContrib::Map');
 
 use Assert;
 
@@ -33,7 +33,7 @@ sub STORE {
     my ( $this, $key, $value ) = @_;
     $this->{keys}{$key} = $value;
     Scalar::Util::weaken( $this->{keys}{$key} )
-        if ( ref($value) && $key =~ /^_/ );
+      if ( ref($value) && $key =~ /^_/ );
 }
 
 sub FETCH {
