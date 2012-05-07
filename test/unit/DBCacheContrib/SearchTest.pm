@@ -35,6 +35,7 @@ sub check {
           . $this->{map}->toString() );
 }
 
+
 sub verify_empty {
     my $this = shift;
     $this->usual();
@@ -42,6 +43,7 @@ sub verify_empty {
     $this->assert_not_null($search);
     $this->assert_equals( 1, $search->matches( $this->{map} ) );
 }
+
 
 sub verify_badparse1 {
     my $this = shift;
@@ -452,6 +454,7 @@ sub verify_and7 {
     $this->check( "fumber AND string", 0 );
 }
 
+
 sub verify_andor1 {
     my $this = shift;
     $this->usual();
@@ -523,6 +526,7 @@ sub verify_or8 {
     $this->usual();
     $this->check( "number OR fring", 1 );
 }
+
 
 sub conjoin {
     my ( $this, $last, $A, $B, $a, $b, $c, $r ) = @_;
@@ -625,6 +629,7 @@ sub verify_caseops8 {
     $this->check( "uc(bing) = 'string'", 0 );
 }
 
+
 sub verify_contains {
     my $this = shift;
     $this->usual();
@@ -637,8 +642,7 @@ sub verify_d2n1 {
     my $this = shift;
     $this->usual();
     my $now = time;
-    $this->check( "d2n '" . Foswiki::Time::formatTime( $now, '$iso' ) . "'",
-        $now );
+    $this->check( "d2n '" . Foswiki::Time::formatTime( $now, '$iso' ) . "'", $now );
 }
 
 sub verify_d2n2 {
@@ -679,181 +683,182 @@ sub verify_length4 {
 sub verify_equal1 {
     my $this = shift;
     $this->usual();
-    $this->check( "'string' = 'string'", 1 );
+    $this->check( "'string' = 'string'", 1);
 }
 
 sub verify_equal2 {
     my $this = shift;
     $this->usual();
-    $this->check( "99 = 99", 1 );
+    $this->check( "99 = 99", 1);
 }
 
 sub verify_equal3 {
     my $this = shift;
     $this->usual();
-    $this->check( "'string' = 'strong'", 0 );
+    $this->check( "'string' = 'strong'", 0);
 }
 
 sub verify_equal4 {
     my $this = shift;
     $this->usual();
-    $this->check( "99 = 98", 0 );
+    $this->check( "99 = 98", 0);
 }
 
 sub verify_equal5 {
     my $this = shift;
     $this->usual();
-    $this->check( " number  = 98", 0 );
+    $this->check(" number  = 98", 0);
 }
 
 sub verify_equal6 {
     my $this = shift;
     $this->usual();
-    $this->check( " bumber = 99", 0 );
+    $this->check(" bumber = 99", 0);
 }
 
 sub verify_equal7 {
     my $this = shift;
     $this->usual();
-    $this->check( " bing  = bong", 1 );
+    $this->check(" bing  = bong", 1);
 }
 
 sub verify_notequal1 {
     my $this = shift;
     $this->usual();
-    $this->check( "'string' != 'string'", 0 );
+    $this->check( "'string' != 'string'", 0);
 }
 
 sub verify_notequal2 {
     my $this = shift;
     $this->usual();
-    $this->check( "99 != 99", 0 );
+    $this->check( "99 != 99", 0);
 }
 
 sub verify_notequal3 {
     my $this = shift;
     $this->usual();
-    $this->check( "'string' != 'strong'", 1 );
+    $this->check( "'string' != 'strong'", 1);
 }
 
 sub verify_notequal4 {
     my $this = shift;
     $this->usual();
-    $this->check( "99 != 98", 1 );
+    $this->check( "99 != 98", 1);
 }
 
 sub verify_notequal5 {
     my $this = shift;
     $this->usual();
-    $this->check( " number != 98", 1 );
+    $this->check(" number != 98", 1);
 }
 
 sub verify_notequal6 {
     my $this = shift;
     $this->usual();
-    $this->check( " bumber != 99", 1 );
+    $this->check(" bumber != 99", 1);
 }
 
 sub verify_notequal7 {
     my $this = shift;
     $this->usual();
-    $this->check( " number != bumber", 1 );
+    $this->check(" number != bumber", 1);
 }
 
 sub verify_notequal8 {
     my $this = shift;
     $this->usual();
-    $this->check( " 99 != bumber", 1 );
+    $this->check(" 99 != bumber", 1);
 }
 
 sub verify_notequal9 {
     my $this = shift;
     $this->usual();
-    $this->check( " bing != bing", 0 );
+    $this->check(" bing != bing", 0);
 }
 
 sub verify_match1 {
     my $this = shift;
     $this->usual();
-    $this->check( " 'foo' =~ 'f'", 1 );
+    $this->check(" 'foo' =~ 'f'", 1);
 }
 
 sub verify_match2 {
     my $this = shift;
     $this->usual();
-    $this->check( " 'foo' =~ 'o'", 1 );
+    $this->check(" 'foo' =~ 'o'", 1);
 }
 
 sub verify_match3 {
     my $this = shift;
     $this->usual();
-    $this->check( " 'foo' =~ 'f.*'", 1 );
+    $this->check(" 'foo' =~ 'f.*'", 1);
 }
 
 sub verify_match4 {
     my $this = shift;
     $this->usual();
-    $this->check( " 'foo' =~ '.*o+'", 1 );
+    $this->check(" 'foo' =~ '.*o+'", 1);
 }
 
 sub verify_match5 {
     my $this = shift;
     $this->usual();
-    $this->check( " 'foo' =~ 'bar'", 0 );
+    $this->check(" 'foo' =~ 'bar'", 0);
 }
 
 sub verify_match6 {
     my $this = shift;
     $this->usual();
-    $this->check( " string =~ 'ring'", 1 );
+    $this->check(" string =~ 'ring'", 1);
 }
 
 sub verify_match7 {
     my $this = shift;
     $this->usual();
-    $this->check( " string =~ 'rang'", 0 );
+    $this->check(" string =~ 'rang'", 0);
 }
 
 sub verify_match8 {
     my $this = shift;
     $this->usual();
-    $this->check( " string =~ bang", 0 );
+    $this->check(" string =~ bang", 0);
 }
 
 sub verify_match9 {
     my $this = shift;
     $this->usual();
-    $this->check( " foo =~ string", 0 );
+    $this->check(" foo =~ string", 0);
 }
+
 
 sub verify_defined1 {
     my $this = shift;
     $this->usual();
-    $this->check( "defined string", 1 );
+    $this->check("defined string", 1);
 }
 
 sub verify_defined2 {
     my $this = shift;
     $this->usual();
-    $this->check( "defined 'string'", 1 );
+    $this->check("defined 'string'", 1);
 }
 
 sub verify_defined3 {
     my $this = shift;
     $this->usual();
-    $this->check( "defined 99", 1 );
+    $this->check("defined 99", 1);
 }
 
 sub verify_defined4 {
     my $this = shift;
     $this->usual();
-    $this->check( "defined bing", 0 );
+    $this->check("defined bing", 0);
 }
 
 sub verify_defined5 {
     my $this = shift;
     $this->usual();
-    $this->check( "!defined(bing)", 1 );
+    $this->check("!defined(bing)", 1);
 }
 
 1;

@@ -7,13 +7,13 @@ use Assert;
 sub getID {
     my ( $this, $k ) = @_;
     return $this->{id} unless defined $k;
-    return $this->{id} . "\0$k";
+    return $this->{id}."\0$k";
 }
 
 sub FETCH {
     my ( $this, $key ) = @_;
-    return $this->{archivist}
-      ->decode( $this->{archivist}->db_get( $this->getID($key) ) );
+    return $this->{archivist}->decode(
+        $this->{archivist}->db_get( $this->getID($key) ));
 }
 
 sub DESTROY {

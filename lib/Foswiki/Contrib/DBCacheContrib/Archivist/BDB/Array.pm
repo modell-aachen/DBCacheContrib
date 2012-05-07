@@ -4,13 +4,10 @@ package Foswiki::Contrib::DBCacheContrib::Archivist::BDB::Array;
 use strict;
 
 use Foswiki::Contrib::DBCacheContrib::Array ();
-
 # Mixin collections code
 use Foswiki::Contrib::DBCacheContrib::Archivist::BDB::Collection ();
-our @ISA = (
-    'Foswiki::Contrib::DBCacheContrib::Array',
-    'Foswiki::Contrib::DBCacheContrib::Archivist::BDB::Collection'
-);
+our @ISA = ( 'Foswiki::Contrib::DBCacheContrib::Array',
+         'Foswiki::Contrib::DBCacheContrib::Archivist::BDB::Collection' );
 
 use Assert;
 
@@ -36,14 +33,14 @@ sub STORE {
     if ( $index >= $this->FETCHSIZE() ) {
         $this->STORESIZE( $index + 1 );
     }
-    $this->{archivist}
-      ->db_set( $this->getID($index), $this->{archivist}->encode($value) );
+    $this->{archivist}->db_set(
+        $this->getID($index), $this->{archivist}->encode($value));
 }
 
 sub FETCHSIZE {
     my ($this) = @_;
-    unless ( defined $this->{size} ) {
-        $this->{size} = $this->{archivist}->db_get( 'S' . $this->{id} ) || 0;
+    unless (defined $this->{size}) {
+        $this->{size} = $this->{archivist}->db_get('S'.$this->{id}) || 0;
     }
     return $this->{size};
 }
@@ -53,7 +50,7 @@ sub STORESIZE {
     my $sz = $this->FETCHSIZE();
     if ( $count > $sz ) {
         for ( my $i = $sz ; $i < $count ; $i++ ) {
-            $this->{archivist}->db_set( $this->getID($i), '' );
+            $this->{archivist}->db_set( $this->getID($i), '');
         }
     }
     elsif ( $count < $sz ) {
@@ -62,7 +59,7 @@ sub STORESIZE {
         }
     }
     $this->{size} = $count;
-    $this->{archivist}->db_set( 'S' . $this->{id}, $count );
+    $this->{archivist}->db_set( 'S'.$this->{id}, $count );
 }
 
 sub EXISTS {

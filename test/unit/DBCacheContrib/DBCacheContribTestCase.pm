@@ -25,14 +25,14 @@ sub tear_down {
 
     $this->SUPER::tear_down();
 
-    unlink( $this->{tempfn} ) if $this->{tempfn};
+    unlink($this->{tempfn}) if $this->{tempfn};
 }
 
 sub setArchivist {
     my ( $this, $archivist ) = @_;
     $this->{archivist} = $archivist;
-    $this->{tempfn}    = File::Temp::tmpnam();
-    $this->{ar}        = $archivist->new( $this->{tempfn} );
+    $this->{tempfn} = File::Temp::tmpnam();
+    $this->{ar}     = $archivist->new( $this->{tempfn} );
 }
 
 sub StorableArchivist {
@@ -67,13 +67,10 @@ sub BDBArchivist {
 }
 
 sub fixture_groups {
-    return (
-        [
-            'StorableArchivist',
-
-            #'BDBArchivist'
-        ]
-    );
+    return ( [
+        'StorableArchivist',
+        #'BDBArchivist'
+       ] );
 }
 
 1;

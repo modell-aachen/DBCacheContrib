@@ -4,7 +4,7 @@ package Foswiki::Contrib::DBCacheContrib::MemArray;
 use strict;
 
 use Foswiki::Contrib::DBCacheContrib::Array ();
-our @ISA = ('Foswiki::Contrib::DBCacheContrib::Array');
+our @ISA = ( 'Foswiki::Contrib::DBCacheContrib::Array' );
 
 use Assert;
 

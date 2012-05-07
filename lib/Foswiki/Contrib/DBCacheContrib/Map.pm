@@ -44,7 +44,6 @@ package Foswiki::Contrib::DBCacheContrib::Map;
 use strict;
 
 use Tie::Hash ();
-
 # Mixin archivability
 use Foswiki::Contrib::DBCacheContrib::Archivable;
 
@@ -61,15 +60,14 @@ use Assert;
 
 sub new {
     my $class = shift;
-    my %args  = @_;
-    my $this  = bless( {}, $class );
+    my %args = @_;
+    my $this = bless( {}, $class );
     if ( $args{initial} ) {
-        if ( ref( $args{initial} ) eq 'HASH' ) {
-            while ( my ( $k, $v ) = each %{ $args{initial} } ) {
-                $this->STORE( $k, $v );
+        if (ref($args{initial}) eq 'HASH') {
+            while (my ($k, $v) = each %{$args{initial}}) {
+                $this->STORE($k, $v);
             }
-        }
-        else {
+        } else {
             $this->parse( $args{initial} );
         }
     }

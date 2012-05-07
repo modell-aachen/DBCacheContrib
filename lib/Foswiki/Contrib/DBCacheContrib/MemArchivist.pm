@@ -8,19 +8,19 @@ use strict;
 
 use Foswiki::Contrib::DBCacheContrib::Archivist ();
 
-our @ISA = ('Foswiki::Contrib::DBCacheContrib::Archivist');
+our @ISA = ( 'Foswiki::Contrib::DBCacheContrib::Archivist' );
 
 use Assert;
-use Foswiki::Contrib::DBCacheContrib::MemMap   ();
+use Foswiki::Contrib::DBCacheContrib::MemMap ();
 use Foswiki::Contrib::DBCacheContrib::MemArray ();
 
 sub new {
     my ( $class, $cacheName ) = @_;
 
-    my $workDir = Foswiki::Func::getWorkArea('DBCacheContrib');
+    my $workDir   = Foswiki::Func::getWorkArea('DBCacheContrib');
     $cacheName =~ s/\//\./go;
 
-    my $this = bless( { _file => $workDir . '/' . $cacheName }, $class );
+    my $this = bless( { _file => $workDir.'/'.$cacheName }, $class );
     return $this;
 }
 
@@ -28,15 +28,14 @@ sub new {
 sub newMap {
     my $this = shift;
     return new Foswiki::Contrib::DBCacheContrib::MemMap(
-        archivist => $this,
-        @_
-    );
+        archivist => $this, @_ );
 }
 
 # Factory for new Array objects
 sub newArray {
     my ($this) = @_;
-    return new Foswiki::Contrib::DBCacheContrib::MemArray( archivist => $this );
+    return new Foswiki::Contrib::DBCacheContrib::MemArray(
+        archivist => $this );
 }
 
 # Subclasses must provide getRoot and clear.

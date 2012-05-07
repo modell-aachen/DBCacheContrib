@@ -25,33 +25,33 @@ package Foswiki::Contrib::DBCacheContrib::Archivist::BDB;
 use strict;
 
 use Foswiki::Contrib::DBCacheContrib::Archivist ();
-our @ISA = ('Foswiki::Contrib::DBCacheContrib::Archivist');
+our @ISA = ( 'Foswiki::Contrib::DBCacheContrib::Archivist' );
 
 use Assert;
 
 use BerkeleyDB ();
 
-use Foswiki::Contrib::DBCacheContrib::Archivist::BDB::Map   ();
+use Foswiki::Contrib::DBCacheContrib::Archivist::BDB::Map ();
 use Foswiki::Contrib::DBCacheContrib::Archivist::BDB::Array ();
 
 # Type constants
-sub _SCALAR { 0 }
-sub _MAP    { 1 }
-sub _ARRAY  { 2 }
+sub _SCALAR { 0 };
+sub _MAP    { 1 };
+sub _ARRAY  { 2 };
 
 sub new {
     my ( $class, $cacheName ) = @_;
 
-    my $workDir = Foswiki::Func::getWorkArea('DBCacheContrib');
+    my $workDir   = Foswiki::Func::getWorkArea('DBCacheContrib');
     $cacheName =~ s/\//\./go;
-    my $file = $workDir . '/' . $cacheName;
+    my $file = $workDir.'/'.$cacheName;
 
     my $this = bless( {}, $class );
     $this->{db} = new BerkeleyDB::Hash(
         -Flags    => BerkeleyDB::DB_CREATE(),
         -Filename => $file
     );
-    ASSERT( defined $this->{db}, "$file: $! $BerkeleyDB::Error" ) if DEBUG;
+    ASSERT(defined $this->{db}, "$file: $! $BerkeleyDB::Error") if DEBUG;
     $this->{stubs} = {};
     return $this;
 }
@@ -61,46 +61,46 @@ sub new {
 
 # Package private
 sub db_get {
-    my ( $this, $key ) = @_;
+    my ($this, $key) = @_;
     my $value;
-    my $status = $this->{db}->db_get( $key, $value );
+    my $status = $this->{db}->db_get($key, $value);
     return $status ? undef : $value;
 }
 
 # Package private
 sub db_set {
-    my ( $this, $key, $value ) = @_;
-    my $status = $this->{db}->db_put( $key, $value );
+    my ($this, $key, $value) = @_;
+    my $status = $this->{db}->db_put($key, $value);
     return $status;
 }
 
 # Package private
 sub db_exists {
-    my ( $this, $key ) = @_;
+    my ($this, $key) = @_;
     my $value;
-    my $status = $this->{db}->db_get( $key, $value );
+    my $status = $this->{db}->db_get($key, $value);
     return $status ? 0 : 1;
 }
 
 # Package private
 sub db_delete {
-    my ( $this, $key ) = @_;
+    my ($this, $key) = @_;
     my $status = $this->{db}->db_del($key);
     return $status;
 }
+
 
 sub getRoot {
     my $this = shift;
     unless ( $this->{root} ) {
         my $root = $this->db_get('__ROOT__');
-        if ($root) {
-            $this->{root} = $this->decode($root);
+        if ( $root ) {
+            $this->{root} = $this->decode( $root );
         }
         else {
-
             # The root is always a map
             $this->{root} = $this->newMap();
-            $this->{db}->db_put( '__ROOT__', $this->encode( $this->{root} ) );
+            $this->{db}->db_put('__ROOT__', $this->encode($this->{root}))
         }
     }
     return $this->{root};
@@ -165,7 +165,6 @@ sub encode {
         $value = $value->{id};
     }
     elsif ( ref($value) ) {
-
         # SMELL: could use Data::Dumper or another freezer
         die 'Unstorable type ' . ref($value);
     }
@@ -192,7 +191,7 @@ sub decode {
             $this->{stubs}->{$value} ||= $this->newArray( id => $value );
         }
         else {
-            die 'Corrupt DB; type ' . $type;
+            die 'Corrupt DB; type '.$type;
         }
         $value = $this->{stubs}->{$value};
     }
@@ -207,12 +206,12 @@ sub allocateID {
     my $oid = $this->db_get('__ID__') || 0;
     if ( defined $id ) {
         if ( $id >= $oid ) {
-            $this->db_set( '__ID__', $id + 1 );
+            $this->db_set('__ID__', $id + 1);
         }
         return $id;
     }
     else {
-        $this->db_set( '__ID__', $oid + 1 );
+        $this->db_set('__ID__', $oid + 1);
         return $oid;
     }
 }

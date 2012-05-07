@@ -29,11 +29,10 @@ package Foswiki::Contrib::DBCacheContrib::Array;
 use strict;
 
 use Tie::Array ();
-
 # Mixin archivability
 use Foswiki::Contrib::DBCacheContrib::Archivable ();
 
-our @ISA = ( 'Tie::Array', 'Foswiki::Contrib::DBCacheContrib::Archivable' );
+our @ISA = ('Tie::Array', 'Foswiki::Contrib::DBCacheContrib::Archivable');
 
 use Assert;
 
@@ -272,9 +271,8 @@ sub sum {
                 die "$field has no subfield $subfields"
                   unless ( ref($fieldval) );
                 $sum += $fieldval->sum($subfields);
-            }
-            elsif ( $fieldval =~ m/^\s*[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?/ )
-            {
+            } elsif ( $fieldval =~
+                        m/^\s*[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?/ ) {
                 $sum += $fieldval;
             }
         }

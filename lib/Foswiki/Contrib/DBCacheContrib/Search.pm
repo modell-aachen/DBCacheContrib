@@ -278,7 +278,7 @@ sub OP_lc {
     my $rval = $r->matches($map);
     return undef unless defined $rval;
 
-    return lc($rval);
+    return lc( $rval );
 }
 
 sub OP_uc {
@@ -289,7 +289,7 @@ sub OP_uc {
     my $rval = $r->matches($map);
     return undef unless defined $rval;
 
-    return uc($rval);
+    return uc( $rval );
 }
 
 sub OP_i2d {
@@ -356,7 +356,7 @@ sub OP_node {
     my $form = $map->get("form");
     my $val;
     $form = $map->get($form) if $form;
-    $val  = $form->get($r)   if $form;
+    $val  = $form->get($r) if $form;
     $val = $map->get($r) unless defined $val;
 
     return $val;
@@ -432,7 +432,7 @@ sub OP_not_equal {
 
 sub OP_match {
     my ( $r, $l, $map ) = @_;
-
+    
     return undef unless defined $l;
 
     my $lval = $l->matches($map);
