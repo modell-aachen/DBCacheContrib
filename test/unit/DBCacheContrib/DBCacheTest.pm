@@ -123,29 +123,29 @@ sub set_up {
     $meta->putKeyed(
         'PREFERENCE',
         {
-            type   => 'Set',
-            name   => "SHIRT",
-            value  => "purple",
+            type  => 'Set',
+            name  => "SHIRT",
+            value => "purple",
         }
     );
     $meta->putKeyed(
         'PREFERENCE',
         {
-            type   => 'Local',
-            name   => "TROUSERS",
-            value  => "yellow",
+            type  => 'Local',
+            name  => "TROUSERS",
+            value => "yellow",
         }
     );
 
-    Foswiki::Func::saveTopic( $this->{test_web}, "FormTest", $meta,
-        $baseText );
+    Foswiki::Func::saveTopic( $this->{test_web}, "FormTest", $meta, $baseText );
     $this->{test_meta} = $meta;
 }
 
 sub verify_loadSimple {
     my $this = shift;
 
-    my $db  = new Foswiki::Contrib::DBCacheContrib( $this->{test_web}, undef, 0, 1 );
+    my $db =
+      new Foswiki::Contrib::DBCacheContrib( $this->{test_web}, undef, 0, 1 );
     my @res = $db->load();
     $this->assert_str_equals( "0 3 0", join( ' ', @res ) );
     my $topic = $db->cache->get("WebPreferences");
@@ -169,8 +169,8 @@ sub verify_loadSimple {
     $this->assert_str_equals( "1.1",       $info->get("format") );
     $this->assert_str_equals( "1.1",       $info->get("version") );
     $this->assert_str_equals( "WebHome",   $topic->get("parent") );
-    $this->assert_str_equals( $baseText, $topic->get("text") );
-    $this->assert_str_equals( "ThisForm", $topic->get("form") );
+    $this->assert_str_equals( $baseText,   $topic->get("text") );
+    $this->assert_str_equals( "ThisForm",  $topic->get("form") );
     my $form = $topic->get("ThisForm");
     $this->assert_not_null($form);
     $this->assert( $topic->equals( $form->get("_up") ) );
@@ -226,13 +226,13 @@ sub verify_loadSimple {
 
     my $sets = $topic->get('_sets');
     $this->assert_not_null($sets);
-    my ($set, $local) = ($sets->get('Set'), $sets->get('Local'));
+    my ( $set, $local ) = ( $sets->get('Set'), $sets->get('Local') );
     $this->assert_not_null($set);
     $this->assert_not_null($local);
-    $this->assert_equals('beehive', $set->get('HAIR'));
-    $this->assert_equals('yellow', $local->get('TROUSERS'));
-    $this->assert_equals('purple', $set->get('SHIRT'));
-    $this->assert_equals('goatee', $local->get('BEARD'));
+    $this->assert_equals( 'beehive', $set->get('HAIR') );
+    $this->assert_equals( 'yellow',  $local->get('TROUSERS') );
+    $this->assert_equals( 'purple',  $set->get('SHIRT') );
+    $this->assert_equals( 'goatee',  $local->get('BEARD') );
     $db    = undef;
     $atts  = undef;
     $moved = undef;
