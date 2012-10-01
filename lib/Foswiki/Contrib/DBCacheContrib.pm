@@ -41,7 +41,7 @@ FormQueryPlugin for an example of this.
 =cut
 
 our $VERSION = '$Rev$';
-our $RELEASE = '10 Jan 2012';
+our $RELEASE = '01 Oct 2012';
 our $SHORTDESCRIPTION =
   'Reusable code that treats forms as if they were table rows in a database';
 
@@ -186,6 +186,7 @@ sub _loadTopic {
         $time = $Foswiki::Plugins::SESSION->getApproxRevTime( $web, $topic );
     }
     else {
+
         # This is here for TWiki
         $time =
           $Foswiki::Plugins::SESSION->{store}
@@ -502,8 +503,8 @@ sub load {
         };
 
         if ($@) {
+            print STDERR "Cache read failed $@...\n";    # if DEBUG;
             ASSERT( 0, $@ ) if DEBUG;
-            print STDERR "Cache read failed $@...\n" if DEBUG;
             Foswiki::Func::writeWarning("DBCache: Cache read failed: $@");
 
 # $this->{_cache} = undef; # SMELL: don't nuke the cache although this object still exists
@@ -559,6 +560,7 @@ sub _updateTopic {
         )
       )
     {
+
         #print STDERR "$web.$topic is out of date\n";
         $this->{_cache}->remove($topic);
         $$readInfo[0]-- if $readInfo;
@@ -665,6 +667,7 @@ sub uptodate {
           $Foswiki::Plugins::SESSION->getApproxRevTime( $web, $topic );
     }
     else {
+
         # This is here for TWiki
         $fileTime =
           $Foswiki::Plugins::SESSION->{store}

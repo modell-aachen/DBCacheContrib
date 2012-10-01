@@ -133,6 +133,7 @@ Clients use the DBCache by defining a subclass of the
 |  Release: | %$RELEASE% |
 |  Version: | %$VERSION% |
 |  Change History: | |
+|  01 Oct 2012 | Foswiktask:Item11752: don't fail to build the cache for formfield names with dots in it |
 |  10 Jan 2012 | Foswikitask:Item11406: remove redundant reference to archivist from all stored values |
 |  25 Aug 2011 | Foswikitask:Item11070: working around odd defaults of =normalizeWebTopicName= |
 |  28 Mar 2011 | Foswikitask:Item9375: disabling {AlwaysUpdateCache} by default and making an expert option with appropriate warnings |

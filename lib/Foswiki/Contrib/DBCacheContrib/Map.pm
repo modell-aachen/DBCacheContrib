@@ -228,10 +228,13 @@ sub set {
     if ( $attr =~ m/^(\w+)\.(.*)$/o ) {
         $attr = $1;
         my $field = $2;
-        if ( !defined( $this->FETCH($attr) ) ) {
-            $this->STORE( $attr, $this->{archivist}->newMap() );
+        my $map   = $this->FETCH($attr);
+        if ( defined($map) ) {
+            $map->set( $field, $val );
         }
-        $this->FETCH($attr)->set( $field, $val );
+        else {
+            print STDERR "ERROR: no map found to store $attr.$field\n";
+        }
     }
     else {
         $this->STORE( $attr, $val );
