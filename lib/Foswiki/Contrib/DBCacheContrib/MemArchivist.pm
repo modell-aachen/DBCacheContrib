@@ -15,28 +15,22 @@ use Foswiki::Contrib::DBCacheContrib::MemMap   ();
 use Foswiki::Contrib::DBCacheContrib::MemArray ();
 
 sub new {
-    my ( $class, $cacheName ) = @_;
+    my ($class) = @_;
 
-    my $workDir = Foswiki::Func::getWorkArea('DBCacheContrib');
-    $cacheName =~ s/\//\./go;
-
-    my $this = bless( { _file => $workDir . '/' . $cacheName }, $class );
+    my $this = bless( {}, $class );
     return $this;
 }
 
 # Factory for new Map objects
 sub newMap {
     my $this = shift;
-    return new Foswiki::Contrib::DBCacheContrib::MemMap(
-        archivist => $this,
-        @_
-    );
+    return new Foswiki::Contrib::DBCacheContrib::MemMap(@_);
 }
 
 # Factory for new Array objects
 sub newArray {
-    my ($this) = @_;
-    return new Foswiki::Contrib::DBCacheContrib::MemArray( archivist => $this );
+    my $this = shift;
+    return new Foswiki::Contrib::DBCacheContrib::MemArray(@_);
 }
 
 # Subclasses must provide getRoot and clear.

@@ -9,6 +9,7 @@ use Devel::Cycle;
 
 use Foswiki::Contrib::DBCacheContrib::Archivist::Storable;
 use Foswiki::Contrib::DBCacheContrib::Archivist::BDB;
+use Foswiki::Contrib::DBCacheContrib::Archivist::Segmentable;
 
 sub set_up {
     my $this = shift;
@@ -41,6 +42,12 @@ sub StorableArchivist {
         'Foswiki::Contrib::DBCacheContrib::Archivist::Storable');
 }
 
+sub SegmentArchivist {
+    my $this = shift;
+    $this->setArchivist(
+        'Foswiki::Contrib::DBCacheContrib::Archivist::Segmentable');
+}
+
 our $bdb;
 
 {
@@ -69,8 +76,10 @@ sub BDBArchivist {
 sub fixture_groups {
     return (
         [
-            'StorableArchivist',
+            #'StorableArchivist',
+            'SegmentArchivist',
 
+            # SMELL: out of order
             #'BDBArchivist'
         ]
     );

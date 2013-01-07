@@ -6,9 +6,11 @@
 # **SELECTCLASS Foswiki::Contrib::DBCacheContrib::Archivist::* EXPERT**
 # The DBCache can use one of a number of different back-end stores.  Which one
 # you choose depends mainly on what you have installed, and what your data
-# looks like. If you have a realtively small number of topics (< 5000) and lots
+# looks like. If you have a realtively small number of topics (< 1000) and lots
 # of memory, you should use the 'Storable' module. This module loads all topic
-# data into memory for fast searching. On the other hand, if you have a large
+# data into memory for fast searching. For larger webs use 'Segmentable' which caches
+# topics in segments that can be updated faster than using 'Storable' which caches
+# topics in one large segment. If you have a large
 # number of topics, or tight memory constraints, you should use 'BerkeleyDB'
 # which stores the cache in an external database. This is slightly slower to
 # search, but is scalable up to very large numbers of topics.

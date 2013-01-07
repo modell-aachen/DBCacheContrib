@@ -55,7 +55,7 @@ Sync data changes to disc. Some archivist implementations may cache
 data changes in memory. A call to this method ensures that the DB on
 disc is synchronised with that memory representation.
 
--cut
+=cut
 
 sub sync {
     ASSERT("Pure virtual method not implemented");
@@ -85,6 +85,19 @@ Intended primarily for use in testing.
 =cut
 
 sub clear {
+    ASSERT("Pure virtual method not implemented");
+}
+
+=begin TML
+
+---++ ObjectMethod isModified()
+
+Checks whether the cache needs to be reloaded from disk in case it changed
+by some other process.
+
+=cut
+
+sub isModified {
     ASSERT("Pure virtual method not implemented");
 }
 

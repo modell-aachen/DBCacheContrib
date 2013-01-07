@@ -56,6 +56,11 @@ sub new {
     return $this;
 }
 
+# no need to force a reopen
+sub isModified {
+    return 0;
+}
+
 # Functions used to access the DB. These are intended to be used within the
 # package only.
 

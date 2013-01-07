@@ -12,6 +12,7 @@ use Foswiki::Func;
 use Foswiki::Meta;
 
 use Devel::Leak;
+use Data::Dumper ();
 
 my $baseText = <<TEXT;
 CategoryForm
@@ -152,28 +153,26 @@ sub verify_loadSimple {
     $this->assert($topic);
     my $info = $topic->get("info");
     $this->assert_not_null($info);
-    $this->assert( $topic->equals( $info->get("_up") ) );
     my $user = $info->get("author");
     $user = $this->{session}->{users}->getWikiName($user);
     $this->assert_str_equals( "WikiGuest", $user );
     $this->assert_str_equals( "1.1",       $info->get("format") );
 
     $topic = $db->cache->get("FormTest");
+
     $this->assert_not_null($topic);
     $info = $topic->get("info");
     $this->assert_not_null($info);
-    $this->assert( $topic->equals( $info->get("_up") ) );
     $user = $info->get("author");
     $user = $this->{session}->{users}->getWikiName($user);
     $this->assert_str_equals( "WikiGuest", $user );
     $this->assert_str_equals( "1.1",       $info->get("format") );
-    $this->assert_str_equals( "1.1",       $info->get("version") );
+    $this->assert_str_equals( "1",         $info->get("version") );
     $this->assert_str_equals( "WebHome",   $topic->get("parent") );
     $this->assert_str_equals( $baseText,   $topic->get("text") );
     $this->assert_str_equals( "ThisForm",  $topic->get("form") );
     my $form = $topic->get("ThisForm");
     $this->assert_not_null($form);
-    $this->assert( $topic->equals( $form->get("_up") ) );
     $this->assert_str_equals( "Value One", $form->get("FieldOne") );
     $this->assert_str_equals( "Value Two", $form->get("FieldTwo") );
     $this->assert_equals( 7.1, $form->get("FieldThree") );
@@ -184,7 +183,6 @@ sub verify_loadSimple {
     for my $i ( 0 .. 2 ) {
         my $att = $atts->get("[$i]");
         $this->assert_not_null($att);
-        $this->assert( $topic->equals( $att->get("_up") ) );
         if ( "conftest.val" eq $att->get("name") ) {
             $this->assert_str_equals( "",             $att->get("attr") );
             $this->assert_str_equals( "Bangra bingo", $att->get("comment") );
@@ -217,22 +215,12 @@ sub verify_loadSimple {
 
     my $moved = $topic->get("moved");
     $this->assert_not_null($moved);
-    $this->assert( $topic->equals( $moved->get("_up") ) );
     $this->assert_str_equals( "guest", $moved->get("by") );
     $this->assert_equals( 1091696242, $moved->get("date") );
     $this->assert_str_equals( "$this->{test_web}.FormsTest",
         $moved->get("from") );
     $this->assert_str_equals( "$this->{test_web}.FormTest", $moved->get("to") );
 
-    my $sets = $topic->get('_sets');
-    $this->assert_not_null($sets);
-    my ( $set, $local ) = ( $sets->get('Set'), $sets->get('Local') );
-    $this->assert_not_null($set);
-    $this->assert_not_null($local);
-    $this->assert_equals( 'beehive', $set->get('HAIR') );
-    $this->assert_equals( 'yellow',  $local->get('TROUSERS') );
-    $this->assert_equals( 'purple',  $set->get('SHIRT') );
-    $this->assert_equals( 'goatee',  $local->get('BEARD') );
     $db    = undef;
     $atts  = undef;
     $moved = undef;
@@ -278,7 +266,7 @@ sub verify_cache {
 
     # One file in the cache has been touched
     $db  = new Foswiki::Contrib::DBCacheContrib( $this->{test_web} );
-    @res = $db->load();
+    @res = $db->load(1);
     $this->assert_str_equals( "2 1 0", join( ' ', @res ) );
 
     #    $this->checkSameAs($initial,$db);
@@ -293,14 +281,14 @@ sub verify_cache {
     Foswiki::Func::saveTopicText( $this->{test_web}, "NewFile", "Blah" );
 
     $db  = new Foswiki::Contrib::DBCacheContrib( $this->{test_web} );
-    @res = $db->load();
+    @res = $db->load(1);
     $this->assert_str_equals( "3 1 0", join( ' ', @res ) );
 
     # One file in the cache has been deleted
     Foswiki::Func::moveTopic( $this->{test_web}, "FormTest", "Trash",
         "FormTest$$" );
     $db  = new Foswiki::Contrib::DBCacheContrib( $this->{test_web} );
-    @res = $db->load();
+    @res = $db->load(1);
     $this->assert_str_equals( "3 0 1", join( ' ', @res ) );
 
     Foswiki::Func::moveTopic( $this->{test_web}, "NewFile", "Trash",
@@ -308,7 +296,7 @@ sub verify_cache {
     Foswiki::Func::saveTopic( $this->{test_web}, "FormTest", $this->{test_meta},
         $baseText );
     $db  = new Foswiki::Contrib::DBCacheContrib( $this->{test_web} );
-    @res = $db->load();
+    @res = $db->load(1);
     $this->assert_str_equals( "2 1 1", join( ' ', @res ) );
 
     #    $this->checkSameAs($initial, $db);
@@ -345,7 +333,6 @@ sub checkSameAsMap {
     my ( $this, $first, $second, $cmping, $checked, $where ) = @_;
 
     foreach my $k ( $first->getKeys() ) {
-        next if $k eq "_up";
         my $a = $first->FETCH($k)  || "";
         my $b = $second->FETCH($k) || "";
         my $c = "$cmping.$k";

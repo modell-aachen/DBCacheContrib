@@ -40,27 +40,25 @@ FormQueryPlugin for an example of this.
 
 =cut
 
-our $VERSION = '$Rev$';
-our $RELEASE = '01 Oct 2012';
+our $VERSION = '2.00';
+our $RELEASE = '2.00';
 our $SHORTDESCRIPTION =
   'Reusable code that treats forms as if they were table rows in a database';
 
 =begin TML
 
----+++ =new($web, $cacheName[, $standardSchema [, $cachePreferences]])=
+---+++ =new($web, $cacheName[, $standardSchema ])=
 Construct a new DBCache object.
    * =$web= name of web to create the object for.
    * =$cacheName= name of cache file
    * =$standardSchema= Set to 1 this will load the cache using the
      'standard' Foswiki schema, rather than the original DBCacheContrib
      extended schema.
-   * =$cachePreferences= Set to 1 to extract preference settings from each
-     topic and cache them in =_sets->{Set|Local}->{key} = value=
 
 =cut
 
 sub new {
-    my ( $class, $web, $cacheName, $standardSchema, $cachePreferences ) = @_;
+    my ( $class, $web, $cacheName, $standardSchema ) = @_;
     $cacheName ||= '_DBCache' . ( $standardSchema ? '_standard' : '' );
 
     # Backward compatibility
@@ -77,8 +75,7 @@ sub new {
             _cache     => undef,        # pointer to the DB, load on demand
             _web       => $web,
             _cachename => $cacheName,
-            _standardSchema   => $standardSchema,
-            _cachePreferences => $cachePreferences || 0,
+            _standardSchema => $standardSchema,
         },
         $class
     );
@@ -170,27 +167,22 @@ sub _loadTopic {
 
     my ( $tom, $text ) = Foswiki::Func::readTopic( $web, $topic );
     my $standardSchema = $this->{_standardSchema};
+    my $session        = $Foswiki::Plugins::SESSION;
 
     my $meta = $this->{archivist}->newMap();
-    $meta->set( 'name', $topic );
-    if ($standardSchema) {
-        $meta->set( 'web', $web );
-    }
-    else {
-        $meta->set( 'topic', $topic );
-    }
+    $meta->set( 'name',  $topic );
+    $meta->set( 'web',   $web );
+    $meta->set( 'topic', $topic ) unless $standardSchema;
 
     # SMELL: core API
     my $time;
-    if ( $Foswiki::Plugins::SESSION->can('getApproxRevTime') ) {
-        $time = $Foswiki::Plugins::SESSION->getApproxRevTime( $web, $topic );
+    if ( $session->can('getApproxRevTime') ) {
+        $time = $session->getApproxRevTime( $web, $topic );
     }
     else {
 
         # This is here for TWiki
-        $time =
-          $Foswiki::Plugins::SESSION->{store}
-          ->getTopicLatestRevTime( $web, $topic );
+        $time = $session->{store}->getTopicLatestRevTime( $web, $topic );
     }
     $meta->set( '.cache_path', "$web.$topic" );
     $meta->set( '.cache_time', $time );
@@ -219,15 +211,12 @@ sub _loadTopic {
           Foswiki::Func::normalizeWebTopicName( $web, $hash->{name} );
         $formWeb =~ s/\//./g;    # normalize the normalization
         $form = $this->{archivist}->newMap();
+        $form->set( 'name', "$formWeb.$formTopic" );
         if ($standardSchema) {
-            $form->set( 'name',       "$formWeb.$formTopic" );
             $meta->set( 'META:FORM',  $form );
             $meta->set( '.form_name', "$formWeb.$formTopic" );
         }
         else {
-            $form->set( 'name', "$formWeb.$formTopic" );
-            $form->set( '_up',  $meta );
-            $form->set( '_web', $this->{_cache} );
             $meta->set( 'form', $formTopic );
         }
         $meta->set( $formTopic, $form );
@@ -247,8 +236,6 @@ sub _loadTopic {
             $meta->set( 'META:TOPICINFO', $att );
         }
         else {
-            $att->set( '_up',  $meta );
-            $att->set( '_web', $this->{_cache} );
             $meta->set( 'info', $att );
         }
     }
@@ -258,8 +245,6 @@ sub _loadTopic {
             $meta->set( 'META:TOPICMOVED', $att );
         }
         else {
-            $att->set( '_up',  $meta );
-            $att->set( '_web', $this->{_cache} );
             $meta->set( 'moved', $att );
         }
     }
@@ -279,7 +264,6 @@ sub _loadTopic {
             else {
                 unless ($form) {
                     $form = $this->{archivist}->newMap();
-                    $form->set( '_web', $this->{_cache} );
                 }
                 $form->set( $field->{name}, $field->{value} );
             }
@@ -289,8 +273,6 @@ sub _loadTopic {
     foreach my $attachment (@attachments) {
         my $att = $this->{archivist}->newMap( initial => $attachment );
         if ( !$standardSchema ) {
-            $att->set( '_up',  $meta );
-            $att->set( '_web', $this->{_cache} );
             $atts = $meta->get('attachments');
             if ( !defined($atts) ) {
                 $atts = $this->{archivist}->newArray();
@@ -312,17 +294,18 @@ sub _loadTopic {
         $processedText = $text;
     }
 
-    my $prefsCache;
-    if ( $this->{_cachePreferences} ) {
+    my $tomPrefs = $session->{prefs}->loadPreferences($tom);
 
-        # Extract and cache all preference settings from the topic
-        $prefsCache = $this->{archivist}->newMap();
-        $this->_parsePreferences( $processedText, $prefsCache );
-    }
-    my @preferences = $tom->find('PREFERENCE');
-    foreach my $preference (@preferences) {
+    # cache Set preferences
+    foreach my $key ( $tomPrefs->prefs() ) {
         my $prefs;
-        my $pref = $this->{archivist}->newMap( initial => $preference );
+        my $pref = $this->{archivist}->newMap(
+            initial => {
+                type  => 'Set',
+                name  => $key,
+                value => $tomPrefs->get($key),
+            }
+        );
         if ($standardSchema) {
             $prefs = $meta->get('META:PREFERENCE');
             if ( !defined($prefs) ) {
@@ -331,8 +314,6 @@ sub _loadTopic {
             }
         }
         else {
-            $pref->set( '_up',  $meta );
-            $pref->set( '_web', $this->{_cache} );
             $prefs = $meta->get('preferences');
             if ( !defined($prefs) ) {
                 $prefs = $this->{archivist}->newArray();
@@ -340,62 +321,39 @@ sub _loadTopic {
             }
         }
         $prefs->add($pref);
-        if ($prefsCache) {
-            $this->_addSetting(
-                $prefsCache,         $preference->{type},
-                $preference->{name}, $preference->{value}
-            );
-        }
     }
 
-    if ($prefsCache) {
-        $meta->set( '_sets', $prefsCache );
+    # cache Local preferences
+    foreach my $key ( $tomPrefs->localPrefs() ) {
+        my $prefs;
+        my $pref = $this->{archivist}->newMap(
+            initial => {
+                type  => 'Local',
+                name  => $key,
+                value => $tomPrefs->getLocal($key),
+            }
+        );
+        if ($standardSchema) {
+            $prefs = $meta->get('META:PREFERENCE');
+            if ( !defined($prefs) ) {
+                $prefs = $this->{archivist}->newArray();
+                $meta->set( 'META:PREFERENCE', $prefs );
+            }
+        }
+        else {
+            $prefs = $meta->get('preferences');
+            if ( !defined($prefs) ) {
+                $prefs = $this->{archivist}->newArray();
+                $meta->set( 'preferences', $prefs );
+            }
+        }
+        $prefs->add($pref);
     }
+
     $meta->set( 'text', $processedText );
     $meta->set( 'all', $tom->getEmbeddedStoreForm() ) unless $standardSchema;
 
     return $meta;
-}
-
-sub _addSetting {
-    my ( $this, $map, $type, $key, $value ) = @_;
-    my $submap = $map->fastget($type);
-    unless ($submap) {
-        $submap = $this->{archivist}->newMap();
-        $map->set( $type, $submap );
-    }
-    $submap->set( $key, $value );
-}
-
-# Parse preference settings out of topic text
-sub _parsePreferences {
-    my ( $this, $text, $map ) = @_;
-    my ( $key, $value, $type ) = ( '', '' );
-
-    foreach ( split( "\n", $text ) ) {
-        if (m/$Foswiki::regex{setVarRegex}/os) {
-            if ( defined $type ) {
-                $this->_addSetting( $map, $type, $key, $value );
-            }
-            $type  = $1;
-            $key   = $2;
-            $value = ( defined $3 ) ? $3 : '';
-        }
-        elsif ( defined $type ) {
-            if ( /^(   |\t)+ *[^\s]/ && !/$Foswiki::regex{bulletRegex}/o ) {
-
-                # follow up line, extending value
-                $value .= "\n" . $_;
-            }
-            else {
-                $this->_addSetting( $map, $type, $key, $value );
-                undef $type;
-            }
-        }
-    }
-    if ( defined $type ) {
-        $this->_addSetting( $map, $type, $key, $value );
-    }
 }
 
 =begin TML
@@ -439,24 +397,6 @@ sub _onReload {
 
                 # last parent is WebHome
             }
-            unless ( $topic->FETCH('_up') ) {
-                my $parent = $topic->FETCH('parent');
-                $parent = $this->{_cache}->FETCH($parent) if $parent;
-
-                # prevent the _up to be undefined in case of
-                # a parent info to a non-existing topic;
-                # the parent chain ends at the web hash
-                if ($parent) {
-                    $topic->set( '_up', $parent );
-                }
-                else {
-                    $topic->set( '_up', $this->{_cache} );
-                }
-            }
-
-            # set pointer to web
-            $topic->set( '_web', $this->{_cache}, 1 );
-            $topic->set( 'web', $this->{_web} );
         }
     }
 
@@ -475,10 +415,8 @@ cached topics that have been removed.
 =cut
 
 sub load {
-    my $this        = shift;
-    my $updateCache = shift
-      || $Foswiki::cfg{DBCacheContrib}{AlwaysUpdateCache};
-    $updateCache = 1 unless ( defined($updateCache) );
+    my $this = shift;
+    my $updateCache = shift || 0;
 
     #print STDERR "Called load($updateCache)\n";
 
@@ -496,7 +434,7 @@ sub load {
     my $readFromFile  = 0;
     my $removed       = 0;
 
-    if ( $updateCache || $this->{_cache}->size() == 0 ) {
+    if ( $updateCache || $readFromCache == 0 ) {
         eval {
             ( $readFromCache, $readFromFile, $removed ) =
               $this->_updateCache($web);
@@ -507,7 +445,6 @@ sub load {
             ASSERT( 0, $@ ) if DEBUG;
             Foswiki::Func::writeWarning("DBCache: Cache read failed: $@");
 
-# $this->{_cache} = undef; # SMELL: don't nuke the cache although this object still exists
         }
         elsif ( $readFromFile || $removed ) {
             $this->{archivist}->sync( $this->{_cache} );
@@ -532,7 +469,6 @@ sub loadTopic {
         print STDERR "Cache read failed $@...\n" if DEBUG;
         Foswiki::Func::writeWarning("DBCache: Cache read failed: $@");
 
-# $this->{_cache} = undef; # SMELL: don't nuke the cache although this object still exists
         $found = 0;
     }
 
@@ -570,8 +506,7 @@ sub _updateTopic {
 
         #print STDERR "$web.$topic is not in the cache\n";
         # Not in cache
-        my $exists = Foswiki::Func::topicExists( $web, $topic );
-        if ($exists) {
+        if ( Foswiki::Func::topicExists( $web, $topic ) ) {
             $topcache = $this->_loadTopic( $web, $topic );
             $this->{_cache}->set( $topic, $topcache );
         }
@@ -615,6 +550,8 @@ sub _updateCache {
     # load topics that are missing from the cache
     foreach my $topic ( Foswiki::Func::getTopicList($web) ) {
         if ( $this->_updateTopic( $web, $topic, \@readInfo ) ) {
+
+            #print STDERR "... updated topic $web.$topic\n";
             push( @readTopic, $topic );
         }
 

@@ -18,9 +18,6 @@ The keys in a map operate like any other keys, except that key names
 beginning with underscore are interpreted as internal
 references to objects that must be "weak" i.e. are not used in garbage
 collection (see the doc on Scalar::Util::weaken for more info).
-For example, DBCacheContrib defines '_up' and '_web' references
-to improve tree traversal performance, but these references will be
-regarded by the archivist as 'weak' so will be ignored during GC.
 
 =cut
 
@@ -73,13 +70,18 @@ sub new {
             $this->parse( $args{initial} );
         }
     }
+    if ( $args{existing} ) {
+        if ( ref( $args{existing} ) eq $class ) {
+            $this->{keys} = $args{existing}->{keys};
+        }
+    }
+
     return $this;
 }
 
 sub TIEHASH {
     my $class = shift;
     ASSERT( scalar(@_) % 2 == 0 ) if DEBUG;
-    my %args = @_;
     return $class->new(@_);
 }
 
@@ -110,6 +112,7 @@ this.that='the other', one3three=four five="5"
 
 sub parse {
     my ( $this, $string ) = @_;
+
     my $orig = $string;
     my $n    = 1;
     while ( $string !~ m/^[\s,]*$/o ) {

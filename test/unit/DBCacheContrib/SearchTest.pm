@@ -28,6 +28,7 @@ sub check {
     $result = 'undef' unless defined $result;
 
     #print STDERR "expect=$expect, result=$result\n";
+    #print STDERR "map=".$this->{map}->toString()."\n";
 
     $this->assert_equals( $expect, $result,
             $search->toString()

@@ -46,14 +46,12 @@ use Foswiki::Contrib::DBCacheContrib::Search ();
 
 sub new {
     my $class = shift;
-    my %args  = @_;
-    my $this  = bless( {}, $class );
+    my $this = bless( {}, $class );
     return $this;
 }
 
 sub TIEARRAY {
     my $class = shift;
-    my %args  = @_;
     return $class->new(@_);
 }
 

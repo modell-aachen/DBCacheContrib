@@ -1,4 +1,4 @@
-%META:TOPICINFO{author="ProjectContributor" date="1246522359" format="1.1" reprev="1.2" version="1.2"}%
+%META:TOPICINFO{author="BaseUserMapping_999" comment="autosave" date="1356639593" format="1.1" version="4"}%
 ---+!! %TOPIC%
 
 Reusable code that caches Foswiki topics, and provides fast
@@ -40,40 +40,36 @@ names to values.
 
 Each topic in the web automatically gets a number of standard fields, generated
 by reading the metadata from the topic (see %SYSTEMWEB%.MetaData)
-	* =name=        - name of the topic
-	* =parent=      - *name* of parent topic
-	* =_up=         - _reference_ to the Map of the parent topic, if it exists
-	* =attachments= - array of Maps, each of which contains:
-		* =_up= - _reference_ to the Map for the topic
-		* =name= - attachment name
-		* =attr= - e.g hidden
-		* =comment= - attachment comment
-		* =path= - client path used to upload attachment
-		* =size= - size in Kb
-		* =user= - who uploaded the attachment
-		* =version= - e.g. 1.3
-	* =info= - Map containing:
-		* =_up= - reference to the Map for the topic
-		* =author= - most recent author
-		* =date= - date of last change
-		* =format= - topic format version
-		* =version= - topic version number
-	* =moved= - Map containing:
-		* =_up= - reference to the Map for the topic
-		* =by= - who moved it
-		* =date= - when they moved it
-		* =from= - where they moved it from
-		* =to= - where they moved it to
-	* =form= - form type
-	*  _form name_ - e.g. if a "My<nop>Form" is attached, this will be
-          =My<nop>Form=. This is a reference to a Map containing a key for each
+   * =name=        - name of the topic
+   * =parent=      - *name* of parent topic
+   * =attachments= - array of maps, each of which contains:
+      * =name= - attachment name
+      * =attr= - e.g hidden
+      * =comment= - attachment comment
+      * =path= - client path used to upload attachment
+      * =size= - size in Kb
+      * =user= - who uploaded the attachment
+      * =version= - e.g. 1.3
+   * =info= - map containing:
+      * =author= - most recent author
+      * =date= - date of last change
+      * =format= - topic format version
+      * =version= - topic version number
+   * =moved= - map containing:
+      * =by= - who moved it
+      * =date= - when they moved it
+      * =from= - where they moved it from
+      * =to= - where they moved it to
+   * =preferences= - array of maps, each of which contains:
+      * =name= - preference name
+      * =type= - either Set or Local
+      * =value= - the value of the named preference 
+   * =form= - form type
+   *  _form name_ - e.g. if a "My<nop>Form" is attached, this will be
+          =My<nop>Form=. This is a reference to a map containing a key for each
           field in the form. Each key maps to the value in the form data for
-          that key. The Map will also have an =_up= reference to the Map for
-          the topic.
-	* =text= - raw text of the topic)
-
-The sub-maps created for =info=, _form name_, =moved=, and each row in
-=attachments= also have a _reference_ back to the topic Map, called  =_up=.
+          that key. 
+   * =text= - raw text of the topic)
 
 Other fields may be added by subclasses. Refer to the documentation for the
 plugin that is using the DBCache for more details.
@@ -120,7 +116,7 @@ Clients use the DBCache by defining a subclass of the
 =Foswiki::Contrib::DBCacheContrib= class. Implementors are stongly recommended to read the POD documentation in the code:
 
 <!--
-	* Set SHORTDESCRIPTION = %$SHORTDESCRIPTION%
+   * Set SHORTDESCRIPTION = %$SHORTDESCRIPTION%
 -->
 
 ---++ Installation Instructions
@@ -133,6 +129,8 @@ Clients use the DBCache by defining a subclass of the
 |  Release: | %$RELEASE% |
 |  Version: | %$VERSION% |
 |  Change History: | |
+|  07 Jan 2013 | Foswikitask:Item8195: extract and cache preference settings; \
+                 Foswikitask:Item12333: implement an archivist caching a web in segments; |
 |  01 Oct 2012 | Foswiktask:Item11752: don't fail to build the cache for formfield names with dots in it |
 |  10 Jan 2012 | Foswikitask:Item11406: remove redundant reference to archivist from all stored values |
 |  25 Aug 2011 | Foswikitask:Item11070: working around odd defaults of =normalizeWebTopicName= |
@@ -155,8 +153,8 @@ Clients use the DBCache by defining a subclass of the
 |  12943 | Bugs:Item3659: added automatic conversion of integers to dates |
 |  12923 | added REF operator; \
            added link to web object to hashes; \
-	   fixed parent relation to end in WebHome; \
-	   added "web" property to topic hashes; \
+           fixed parent relation to end in WebHome; \
+           added "web" property to topic hashes; \
            caching META:PREFERENCES now |
 |  11537 | Added lc and uc operators for case-insensitive searches |
 |  9303 | TWikibug:Item1844 - don't die on broken symlinks |
@@ -182,7 +180,6 @@ Clients use the DBCache by defining a subclass of the
 |  5003 | Initial version |
 |  8 Jul 2004 | Initial version, split out from <nop>FormQueryPlugin |
 |  Dependencies: | %$DEPENDENCIES% |
-|  Perl Version: | 5.0 |
 |  Home: | http://foswiki.org/Extensions/%TOPIC% |
 |  Support: | http://foswiki.org/Support/%TOPIC% |
 

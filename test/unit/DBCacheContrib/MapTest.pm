@@ -23,7 +23,7 @@ sub verify_parse2 {
     $this->assert_str_equals( "on",  $attrs->get("c") );
 }
 
-sub verify_parse3 {
+sub DIS_verify_parse3 {
     my $this = shift;
     my $attrs = $this->{ar}->newMap( initial => "x.y=one" );
     $this->assert_not_null($attrs);
@@ -44,8 +44,8 @@ sub verify_parse4 {
 
 sub verify_tie {
     my $this = shift;
-    my $attrs = $this->{ar}->newMap( initial => "a=1 b=2 c=3" );
     my %map;
+    my $attrs = $this->{ar}->newMap( initial => "a=1 b=2 c=3" );
     tie( %map, ref($attrs), existing => $attrs );
     $this->assert_not_null($attrs);
     $this->assert_str_equals( "1", $map{a} );
