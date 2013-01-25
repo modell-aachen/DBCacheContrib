@@ -1,4 +1,4 @@
-%META:TOPICINFO{author="BaseUserMapping_999" comment="autosave" date="1356639593" format="1.1" version="4"}%
+%META:TOPICINFO{author="micha" comment="autosave" date="1359041068" format="1.1" version="7"}%
 ---+!! %TOPIC%
 
 Reusable code that caches Foswiki topics, and provides fast
@@ -108,8 +108,7 @@ Dates for the date operators (=IS_DATE=, =EARLIER_THAN= etc) must be dates in th
 To achieve best perfomance the plugin caches the data read from topics in a
 database. The database is stored in the work area for the DBCacheContrib (see
 ={WorkAreaDir}= in =configure=). If any topic changes in the web, this
-cache is automatically rebuilt (subject to configuration options). The cache
-can be deleted at any point with no ill effects.
+cache is automatically updated.
 
 ---++ Detailed Documentation
 Clients use the DBCache by defining a subclass of the
@@ -124,11 +123,14 @@ Clients use the DBCache by defining a subclass of the
 
 ---++ Contrib Info
 |  Author: | Foswiki:Main/CrawfordCurrie http://c-dot.co.uk, Foswiki:Main/MichaelDaum http://michaeldaumconsulting.com |
-|  Copyright &copy;: | This code is based on an original development of Motorola Inc. and is protected by the following copyrights: <br>Copyright @copy 2002-2003 Motorola Inc. All Rights Reserved. <br>Portions copyright &copy; 2004. Crawford Currie http://www.c-dot.co.uk |
+|  Copyright &copy;: | This code is based on an original development of Motorola Inc. and is protected by the following copyrights: <br>Copyright @copy 2002-2003 Motorola Inc. All Rights Reserved. %BR%\
+                       Portions copyright &copy; 2004 Crawford Currie http://www.c-dot.co.uk. %BR%\
+                       Portions copyright &copy; 2013 Michael Daum http://michaeldaumconsulting.com |
 |  License: | GPL |
 |  Release: | %$RELEASE% |
 |  Version: | %$VERSION% |
 |  Change History: | |
+|  25 Jan 2013 | Foswikitask:Item12369: fixed loading cache from disk on a change |
 |  07 Jan 2013 | Foswikitask:Item8195: extract and cache preference settings; \
                  Foswikitask:Item12333: implement an archivist caching a web in segments; |
 |  01 Oct 2012 | Foswiktask:Item11752: don't fail to build the cache for formfield names with dots in it |

@@ -66,12 +66,12 @@ sub sync {
         if ( !defined( $seg->{_modified} ) || $seg->{_modified} ) {
             my $segmentFile = $this->_getCacheFileOfSegment($seg);
 
-            #print STDERR "storing segment to $segmentFile\n";
+            #print STDERR "storing segment $seg->{id}\n";
             $seg->{_modified} = 0;
             Storable::lock_store( $seg, $segmentFile );
+            $this->updateCacheTime($seg);
         }
         else {
-
             #print STDERR "segment $seg->{id} not modified\n";
         }
     }
@@ -90,11 +90,11 @@ sub getRoot {
         foreach my $cacheFile ( $this->_getCacheFiles ) {
             my $seg = Storable::lock_retrieve($cacheFile);
 
+            #print STDERR "loading segment $seg->{id}\n";
+            $this->{root}->addSegment($seg);
+
             # remember the time the file has been loaded
             $this->updateCacheTime($seg);
-
-            #print STDERR "loaded from $cacheFile\n";
-            $this->{root}->addSegment($seg);
         }
     }
 
@@ -106,7 +106,7 @@ sub updateCacheTime {
 
     if ( defined $seg ) {
 
-        #print STDERR "updating cache_time of $seg->{id}\n";
+        #print STDERR "updating cache_time of segment $seg->{id}\n";
 
         $seg->{'.cache_time'} = time();
 
@@ -116,7 +116,7 @@ sub updateCacheTime {
         foreach $seg ( $this->{root}->getSegments() ) {
             if ( !defined( $seg->{_modified} ) || $seg->{_modified} ) {
 
-                #print STDERR "updating cache_time of $seg->{id}\n";
+                #print STDERR "updating cache_time of segment $seg->{id}\n";
                 $seg->{'.cache_time'} = time();
             }
         }
@@ -141,6 +141,8 @@ sub isModifiedSegment {
     my $file = $this->_getCacheFileOfSegment($seg) if defined $seg;
 
     my $time = $this->_getModificationTime($file);
+
+#print STDERR "cache_time-time=".($seg->{'.cache_time'} - $time)."\n" if defined $seg->{'.cache_time'};
 
     return 1
       if $time == 0
