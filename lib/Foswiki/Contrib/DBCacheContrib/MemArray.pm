@@ -32,6 +32,7 @@ sub DESTROY {
 
 sub FETCH {
     my ( $this, $key ) = @_;
+    return unless $key =~ /^\d+$/;
     return $this->{values}[$key];
 }
 

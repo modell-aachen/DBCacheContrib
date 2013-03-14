@@ -40,8 +40,8 @@ FormQueryPlugin for an example of this.
 
 =cut
 
-our $VERSION = '2.01';
-our $RELEASE = '2.01';
+our $VERSION = '2.10';
+our $RELEASE = '2.10';
 our $SHORTDESCRIPTION =
   'Reusable code that treats forms as if they were table rows in a database';
 
@@ -299,55 +299,41 @@ sub _loadTopic {
     # cache Set preferences
     foreach my $key ( $tomPrefs->prefs() ) {
         my $prefs;
-        my $pref = $this->{archivist}->newMap(
-            initial => {
-                type  => 'Set',
-                name  => $key,
-                value => $tomPrefs->get($key),
-            }
-        );
         if ($standardSchema) {
             $prefs = $meta->get('META:PREFERENCE');
             if ( !defined($prefs) ) {
-                $prefs = $this->{archivist}->newArray();
+                $prefs = $this->{archivist}->newMap();
                 $meta->set( 'META:PREFERENCE', $prefs );
             }
         }
         else {
             $prefs = $meta->get('preferences');
             if ( !defined($prefs) ) {
-                $prefs = $this->{archivist}->newArray();
+                $prefs = $this->{archivist}->newMap();
                 $meta->set( 'preferences', $prefs );
             }
         }
-        $prefs->add($pref);
+        $prefs->set( $key, $tomPrefs->get($key) );
     }
 
     # cache Local preferences
     foreach my $key ( $tomPrefs->localPrefs() ) {
         my $prefs;
-        my $pref = $this->{archivist}->newMap(
-            initial => {
-                type  => 'Local',
-                name  => $key,
-                value => $tomPrefs->getLocal($key),
-            }
-        );
         if ($standardSchema) {
             $prefs = $meta->get('META:PREFERENCE');
             if ( !defined($prefs) ) {
-                $prefs = $this->{archivist}->newArray();
+                $prefs = $this->{archivist}->newMap();
                 $meta->set( 'META:PREFERENCE', $prefs );
             }
         }
         else {
             $prefs = $meta->get('preferences');
             if ( !defined($prefs) ) {
-                $prefs = $this->{archivist}->newArray();
+                $prefs = $this->{archivist}->newMap();
                 $meta->set( 'preferences', $prefs );
             }
         }
-        $prefs->add($pref);
+        $prefs->set( $key, $tomPrefs->getLocal($key) );
     }
 
     $meta->set( 'text', $processedText );
@@ -555,6 +541,7 @@ sub _updateCache {
             push( @readTopic, $topic );
         }
 
+        #don't disadvantage users just because the cache is off
         #don't disadvantage users just because the cache is off
         last
           if defined( $Foswiki::cfg{DBCacheContrib}{LoadFileLimit} )

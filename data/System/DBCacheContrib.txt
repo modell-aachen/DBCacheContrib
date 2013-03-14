@@ -130,6 +130,7 @@ Clients use the DBCache by defining a subclass of the
 |  Release: | %$RELEASE% |
 |  Version: | %$VERSION% |
 |  Change History: | |
+|  14 Mar 2013 | Foswikitask:Item12425: make preferences searchable by caching them into a map instead of an array |
 |  25 Jan 2013 | Foswikitask:Item12369: fixed loading cache from disk on a change |
 |  07 Jan 2013 | Foswikitask:Item8195: extract and cache preference settings; \
                  Foswikitask:Item12333: implement an archivist caching a web in segments; |
