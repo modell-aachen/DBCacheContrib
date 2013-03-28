@@ -71,6 +71,8 @@ my $uopRE = "!|[lu]c\\b|d2n|length|defined";
 
 my $now = time();
 
+my $globalContext;    # set as part of a call to match()
+
 # PUBLIC STATIC used for testing only; force 'now' to be a particular
 # time.
 sub forceTime {
@@ -110,6 +112,9 @@ sub new {
         $this->{op}    = $op;
         $this          = bless( $this, $class );
     }
+
+    $now = time();    # update $now
+
     return $this;
 }
 
@@ -215,11 +220,19 @@ sub _parse {
 }
 
 sub matches {
-    my ( $this, $map ) = @_;
+    my ( $this, $map, $context ) = @_;
+
+    my $oldContext = $globalContext;
+    $globalContext = $context if defined $context;
 
     my $handler = $operators{ $this->{op} };
-    return 0 unless $handler;
-    return $handler->{exec}( $this->{right}, $this->{left}, $map );
+    my $result  = 0;
+    $result = $handler->{exec}( $this->{right}, $this->{left}, $map )
+      if defined $handler;
+
+    $globalContext = $oldContext if defined $context;
+
+    return $result;
 }
 
 sub OP_true { return 1; }
@@ -368,7 +381,8 @@ sub OP_ref {
     return undef unless ( $map && defined $r );
 
     # get web db
-    my $web = $map->FETCH('_web');
+    my $webDB;
+    $webDB = $globalContext->{webDB} if defined $globalContext;
 
     # parse reference chain
     my %seen;
@@ -390,7 +404,12 @@ sub OP_ref {
         return undef unless $ref;       # unknown field
 
         # get topic object
-        $map = $web->FETCH($ref);
+        unless ( defined $webDB ) {
+            die "WARNING: no cache found in context";
+            return 0;
+        }
+
+        $map = $webDB->fastget($ref);
         return undef unless $map;       # unknown ref
     }
 

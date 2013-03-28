@@ -40,8 +40,8 @@ FormQueryPlugin for an example of this.
 
 =cut
 
-our $VERSION = '2.10';
-our $RELEASE = '2.10';
+our $VERSION = '2.20';
+our $RELEASE = '2.20';
 our $SHORTDESCRIPTION =
   'Reusable code that treats forms as if they were table rows in a database';
 
