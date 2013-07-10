@@ -170,9 +170,14 @@ sub get {
         $res = $this->get( $1, $root );
     }
     elsif ( $key =~ /^(\w+)$/o ) {
+        my @list = ();
 
-        #print STDERR "sum $1\n";
-        $res = $this->sum($key);
+        #print STDERR "$1\n";
+        foreach my $key ( $this->getValues ) {
+            my $val = $key->fastget($1);
+            push @list, $val if defined $val;
+        }
+        $res = join( ", ", @list );
     }
     elsif ( $key =~ m/^\[\*(.+)$/o ) {
         my ( $one, $two ) = mbrf( "[", "]", $1 );
@@ -212,7 +217,7 @@ sub get {
           $this->search( new Foswiki::Contrib::DBCacheContrib::Search($one) );
         if ( $two && ref($res) ) {
 
-            #print STDERR "\t...$two\n";
+            #print STDERR "\tcontinuing with $two\n";
             $res = return $res->get($two);
         }
     }
@@ -222,10 +227,10 @@ sub get {
         $res = $root->get( $1, $root );
     }
     else {
-        die "ERROR: bad Array expression at $key";
+        $res = join( ", ", 0 .. ( $this->size() - 1 ) );
     }
 
-    #print STDERR "\t-> $res\n";
+    #print STDERR "\t-> ".(defined($res)?$res:"undef")."\n";
     return $res;
 }
 
@@ -298,8 +303,6 @@ sub search {
     require Foswiki::Contrib::DBCacheContrib::MemArray;
     my $result = new Foswiki::Contrib::DBCacheContrib::MemArray();
 
-    return $result unless ( $this->FETCHSIZE() > 0 );
-
     my $n = $this->FETCHSIZE();
     for ( my $i = 0 ; $i < $n ; $i++ ) {
         my $meta = $this->FETCH($i);
@@ -308,6 +311,7 @@ sub search {
         }
     }
 
+    return unless $result->FETCHSIZE();
     return $result;
 }
 

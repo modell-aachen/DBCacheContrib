@@ -1,9 +1,14 @@
 package SearchTest;
+
+use strict;
+use warnings;
+
 use DBCacheContribTestCase;
 our @ISA = qw( DBCacheContribTestCase );
 
-use Foswiki::Contrib::DBCacheContrib::Search;
-use Foswiki::Time;
+use Foswiki::Contrib::DBCacheContrib::Search ();
+use Foswiki::Time                            ();
+use Data::Dumper                             ();
 
 sub usual {
     my $this = shift;
@@ -20,8 +25,11 @@ sub usual {
 }
 
 sub check {
-    my ( $this, $query, $expect ) = @_;
+    my ( $this, $query, $expect, $now ) = @_;
     my $search = new Foswiki::Contrib::DBCacheContrib::Search($query);
+
+    Foswiki::Contrib::DBCacheContrib::Search::forceTime($now) if defined $now;
+
     my $result = $search->matches( $this->{map} );
 
     $expect = 'undef' unless defined $expect;
@@ -31,9 +39,7 @@ sub check {
     #print STDERR "map=".$this->{map}->toString()."\n";
 
     $this->assert_equals( $expect, $result,
-            $search->toString()
-          . " expected $expect in "
-          . $this->{map}->toString() );
+        $query . " expected $expect in " . $this->{map}->toString() );
 }
 
 sub verify_empty {
@@ -272,40 +278,30 @@ sub verify_dateops9 {
 sub verify_dateops10 {
     my $this = shift;
     $this->usual();
-    Foswiki::Contrib::DBCacheContrib::Search::forceTime("30 jun 1960")
-      ;    #thursday
-    $this->check( "date WITHIN_DAYS '4'", 1 );
+    $this->check( "date WITHIN_DAYS '4'", 1, "30 jun 1960" );
 }
 
 sub verify_dateops11 {
     my $this = shift;
     $this->usual();
-    Foswiki::Contrib::DBCacheContrib::Search::forceTime("30 jun 1960")
-      ;    #thursday
-    $this->check( "date WITHIN_DAYS '3'", 1 );
+    $this->check( "date WITHIN_DAYS '3'", 1, "30 jun 1960" );
 }
 
 sub verify_dateops12 {
     my $this = shift;
     $this->usual();
-    Foswiki::Contrib::DBCacheContrib::Search::forceTime("30 jun 1960")
-      ;    #thursday
-    $this->check( "date WITHIN_DAYS '2'", 1 );    # th & fri
+    $this->check( "date WITHIN_DAYS '2'", 1, "30 jun 1960" );    # th & fri
 }
 
 sub verify_dateops13 {
     my $this = shift;
     $this->usual();
-    Foswiki::Contrib::DBCacheContrib::Search::forceTime("30 jun 1960")
-      ;                                           #thursday
-    $this->check( "date WITHIN_DAYS '1'", 0 );
+    $this->check( "date WITHIN_DAYS '1'", 0, "30 jun 1960" );
 }
 
 sub verify_dateops14 {
     my $this = shift;
     $this->usual();
-    Foswiki::Contrib::DBCacheContrib::Search::forceTime("30 jun 1960")
-      ;                                           #thursday
     $this->check( "date WITHIN_DAYS '0'", 0 );
 }
 
@@ -335,43 +331,37 @@ sub verify_dateops16 {
 sub verify_dateops17 {
     my $this = shift;
     $this->usual();
-    Foswiki::Contrib::DBCacheContrib::Search::forceTime("3 jul 1960");
-    $this->check( "date WITHIN_DAYS '2'", 1 );
+    $this->check( "date WITHIN_DAYS '2'", 1, "3 jul 1960" );
 }
 
 sub verify_dateops18 {
     my $this = shift;
     $this->usual();
-    Foswiki::Contrib::DBCacheContrib::Search::forceTime("3 jul 1960");
-    $this->check( "date WITHIN_DAYS '1'", 1 );
+    $this->check( "date WITHIN_DAYS '1'", 1, "3 jul 1960" );
 }
 
 sub verify_dateops19 {
     my $this = shift;
     $this->usual();
-    Foswiki::Contrib::DBCacheContrib::Search::forceTime("3 jul 1960");
-    $this->check( "date WITHIN_DAYS '0'", 1 );
+    $this->check( "date WITHIN_DAYS '0'", 1, "3 jul 1960" );
 }
 
 sub verify_dateops20 {
     my $this = shift;
     $this->usual();
-    Foswiki::Contrib::DBCacheContrib::Search::forceTime("4 jul 1960");
-    $this->check( "date WITHIN_DAYS '2'", 0 );
+    $this->check( "date WITHIN_DAYS '2'", 0, "4 jul 1960" );
 }
 
 sub verify_dateops21 {
     my $this = shift;
     $this->usual();
-    Foswiki::Contrib::DBCacheContrib::Search::forceTime("4 jul 1960");
-    $this->check( "date WITHIN_DAYS '1'", 0 );
+    $this->check( "date WITHIN_DAYS '1'", 0, "4 jul 1960" );
 }
 
 sub verify_dateops22 {
     my $this = shift;
     $this->usual();
-    Foswiki::Contrib::DBCacheContrib::Search::forceTime("4 jul 1960");
-    $this->check( "date WITHIN_DAYS '0'", 0 );
+    $this->check( "date WITHIN_DAYS '0'", 0, "4 jul 1960" );
 }
 
 sub verify_not1 {

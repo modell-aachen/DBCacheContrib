@@ -171,7 +171,12 @@ sub get {
     return $this unless $key;
 
     my $res;
-    if ( $key =~ m/^(\w+)(.*)$/o ) {
+    if ( $key =~ m/^(?:name=)?'(\w+)'$/ ) {
+
+        # keyed access
+        $res = $this->FETCH($1);
+    }
+    elsif ( $key =~ m/^(\w+)(.*)$/o ) {
 
         # Sub-expression
         #print STDERR "$1\n";
@@ -194,7 +199,7 @@ sub get {
         my ( $one, $two ) =
           Foswiki::Contrib::DBCacheContrib::Array::mbrf( "[", "]", $1 );
 
-        #print STDERR "[$1]\n";
+        #print STDERR "get $one\n";
         my $field = $this->get( $one, $root );
         if ( $two && ref($field) ) {
 
@@ -211,8 +216,7 @@ sub get {
         $res = $root->get( $1, $root );
     }
     else {
-
-        #print STDERR "ERROR: bad Map expression at $key\n";
+        print STDERR "ERROR: bad Map expression at $key\n";
     }
     return $res;
 }

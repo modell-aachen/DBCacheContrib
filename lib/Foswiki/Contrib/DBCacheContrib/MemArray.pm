@@ -22,7 +22,7 @@ sub DESTROY {
     foreach my $value ( @{ $this->{values} } ) {
         if (   $value
             && ref($value)
-            && UNIVERSAL::can( $_, 'DESTROY' ) )
+            && UNIVERSAL::can( $value, 'DESTROY' ) )
         {
             $value->DESTROY();
         }
@@ -89,6 +89,7 @@ sub UNSHIFT {
 
 sub getValues {
     my $this = shift;
+    return () unless defined $this->{values};
     return @{ $this->{values} };
 }
 

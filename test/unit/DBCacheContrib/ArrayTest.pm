@@ -16,10 +16,8 @@ sub verify_array {
         my $fred = $this->{ar}->newMap( initial => "f1=$i" );
         $array->add($fred);
     }
-    my $sum = 0;
     for ( $i = 0 ; $i < 100 ; $i++ ) {
         $this->assert_equals( $i, $array->get($i)->get("f1") );
-        $sum += $i;
     }
     $i = 0;
     foreach my $v ( $array->getValues() ) {
@@ -30,9 +28,9 @@ sub verify_array {
     my $nonex = $this->{ar}->newMap( initial => "f1=1" );
     $this->assert_equals( -1, $array->find($nonex) );
 
-    $this->assert_equals( 100,  $array->size() );
-    $this->assert_equals( $sum, $array->get("f1") );
-    $this->assert_equals( $sum, $array->sum("f1") );
+    $this->assert_equals( 100, $array->size() );
+    $this->assert_equals( join( ", ", 0 .. 99 ), $array->get("f1") );
+    $this->assert_equals( 99 * 50, $array->sum("f1") );
 
     my $search = new Foswiki::Contrib::DBCacheContrib::Search("f1=50");
     my $res    = $array->search($search);
@@ -147,7 +145,8 @@ sub verify_getsyntax {
     $this->assert_equals( 2, $s->size() );
     $this->assert_str_equals( "a", $s->get("0.name") );
     $this->assert_str_equals( "c", $s->get("[1].name") );
-    $this->assert_equals( 186, $array->get("age") );
+    $this->assert_equals( "40, 105, 41", $array->get("age") );
+    $this->assert_equals( 186,           $array->sum("age") );
 
     $s = $array->get("[*name]");
     $this->assert_equals( 3, $s->size() );
@@ -211,7 +210,8 @@ sub verify_store_retrieve {
     $this->assert_equals( 2, $s->size() );
     $this->assert_str_equals( "c", $s->get("[1].name") );
     $this->assert_str_equals( "a", $s->get("0.name") );
-    $this->assert_equals( 186, $array->get("age") );
+    $this->assert_equals( 186,           $array->sum("age") );
+    $this->assert_equals( "40, 105, 41", $array->get("age") );
 
     $s = $array->get("[*name]");
     $this->assert_equals( 3, $s->size() );

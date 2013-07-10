@@ -40,8 +40,8 @@ FormQueryPlugin for an example of this.
 
 =cut
 
-our $VERSION = '2.20';
-our $RELEASE = '2.20';
+use version; our $VERSION = version->declare("v3.0.0");
+our $RELEASE = '30 Jun 2013';
 our $SHORTDESCRIPTION =
   'Reusable code that treats forms as if they were table rows in a database';
 
@@ -169,7 +169,8 @@ sub _loadTopic {
     my $standardSchema = $this->{_standardSchema};
     my $session        = $Foswiki::Plugins::SESSION;
 
-    my $meta = $this->{archivist}->newMap();
+    my $archivist = $this->{archivist};
+    my $meta      = $archivist->newMap();
     $meta->set( 'name',  $topic );
     $meta->set( 'web',   $web );
     $meta->set( 'topic', $topic ) unless $standardSchema;
@@ -193,13 +194,13 @@ sub _loadTopic {
 
         # Add a fast lookup table for fields. This must be present
         # for QueryAcceleratorPlugin
-        $lookup = $this->{archivist}->newMap();
+        $lookup = $archivist->newMap();
         $meta->set( '.fields',    $lookup );
         $meta->set( '.form_name', '' );
 
         # Create an empty array for the attachments. We have to have this
         # due to a deficiency in the 1.0.5 query algorithm
-        $atts = $this->{archivist}->newArray();
+        $atts = $archivist->newArray();
         $meta->set( 'META:FILEATTACHMENT', $atts );
     }
 
@@ -210,7 +211,7 @@ sub _loadTopic {
         my ( $formWeb, $formTopic ) =
           Foswiki::Func::normalizeWebTopicName( $web, $hash->{name} );
         $formWeb =~ s/\//./g;    # normalize the normalization
-        $form = $this->{archivist}->newMap();
+        $form = $archivist->newMap();
         $form->set( 'name', "$formWeb.$formTopic" );
         if ($standardSchema) {
             $meta->set( 'META:FORM',  $form );
@@ -223,7 +224,7 @@ sub _loadTopic {
     }
     if ( $hash = $tom->get('TOPICPARENT') ) {
         if ($standardSchema) {
-            my $parent = $this->{archivist}->newMap( initial => $hash );
+            my $parent = $archivist->newMap( initial => $hash );
             $meta->set( 'META:TOPICPARENT', $parent );
         }
         else {
@@ -231,7 +232,7 @@ sub _loadTopic {
         }
     }
     if ( $hash = $tom->get('TOPICINFO') ) {
-        my $att = $this->{archivist}->newMap( initial => $hash );
+        my $att = $archivist->newMap( initial => $hash );
         if ($standardSchema) {
             $meta->set( 'META:TOPICINFO', $att );
         }
@@ -240,7 +241,7 @@ sub _loadTopic {
         }
     }
     if ( $hash = $tom->get('TOPICMOVED') ) {
-        my $att = $this->{archivist}->newMap( initial => $hash );
+        my $att = $archivist->newMap( initial => $hash );
         if ($standardSchema) {
             $meta->set( 'META:TOPICMOVED', $att );
         }
@@ -252,18 +253,18 @@ sub _loadTopic {
     if ( scalar(@fields) ) {
         my $fields;
         if ($standardSchema) {
-            $fields = $this->{archivist}->newArray();
+            $fields = $archivist->newArray();
             $meta->set( 'META:FIELD', $fields );
         }
         foreach my $field (@fields) {
             if ($standardSchema) {
-                my $att = $this->{archivist}->newMap( initial => $field );
+                my $att = $archivist->newMap( initial => $field );
                 $fields->add($att);
                 $lookup->set( $field->{name}, $att );
             }
             else {
                 unless ($form) {
-                    $form = $this->{archivist}->newMap();
+                    $form = $archivist->newMap();
                 }
                 $form->set( $field->{name}, $field->{value} );
             }
@@ -271,11 +272,11 @@ sub _loadTopic {
     }
     my @attachments = $tom->find('FILEATTACHMENT');
     foreach my $attachment (@attachments) {
-        my $att = $this->{archivist}->newMap( initial => $attachment );
+        my $att = $archivist->newMap( initial => $attachment );
         if ( !$standardSchema ) {
             $atts = $meta->get('attachments');
             if ( !defined($atts) ) {
-                $atts = $this->{archivist}->newArray();
+                $atts = $archivist->newArray();
                 $meta->set( 'attachments', $atts );
             }
         }
@@ -302,14 +303,14 @@ sub _loadTopic {
         if ($standardSchema) {
             $prefs = $meta->get('META:PREFERENCE');
             if ( !defined($prefs) ) {
-                $prefs = $this->{archivist}->newMap();
+                $prefs = $archivist->newMap();
                 $meta->set( 'META:PREFERENCE', $prefs );
             }
         }
         else {
             $prefs = $meta->get('preferences');
             if ( !defined($prefs) ) {
-                $prefs = $this->{archivist}->newMap();
+                $prefs = $archivist->newMap();
                 $meta->set( 'preferences', $prefs );
             }
         }
@@ -322,18 +323,48 @@ sub _loadTopic {
         if ($standardSchema) {
             $prefs = $meta->get('META:PREFERENCE');
             if ( !defined($prefs) ) {
-                $prefs = $this->{archivist}->newMap();
+                $prefs = $archivist->newMap();
                 $meta->set( 'META:PREFERENCE', $prefs );
             }
         }
         else {
             $prefs = $meta->get('preferences');
             if ( !defined($prefs) ) {
-                $prefs = $this->{archivist}->newMap();
+                $prefs = $archivist->newMap();
                 $meta->set( 'preferences', $prefs );
             }
         }
         $prefs->set( $key, $tomPrefs->getLocal($key) );
+    }
+
+    # cache non-standard meta
+    foreach my $key ( keys %Foswiki::Meta::VALIDATE ) {
+        next
+          if $key =~
+/^(TOPICINFO|CREATEINFO|TOPICMOVED|TOPICPARENT|FILEATTACHMENT|FORM|FIELD|PREFERENCE|VERSIONS|COMMENT)$/;
+        my $validation = $Foswiki::Meta::VALIDATE{$key};
+
+        if ( $validation->{many} ) {
+            my @records = $tom->find($key);
+            next unless @records;
+
+            my $array;
+            foreach my $record (@records) {
+                my $map = $archivist->newMap( initial => $record );
+                $array = $meta->get( lc($key) );
+                unless ( defined($array) ) {
+                    $array = $archivist->newArray();
+                    $meta->set( lc($key), $array );
+                }
+                $array->add($map);
+            }
+        }
+        else {
+            my $record = $tom->get($key);
+            next unless $record;
+            my $map = $archivist->newMap( initial => $record );
+            $meta->set( lc($key), $map );
+        }
     }
 
     $meta->set( 'text', $processedText );
